@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>API Skyvva Configuration</title>
+
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- CodeMirror -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/dracula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/htmlmixed/htmlmixed.min.js"></script>
+
+    <!-- js-beautify -->
+    <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.14.0/js/lib/beautify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.14.0/js/lib/beautify-html.js"></script>
+
+    <style>
+        html, body {
+            height: 100%;
+        }
+        .CodeMirror {
+            height: 180px;              /* fixed visible height */
+            max-height: 180px;
+            /*overflow-y: auto !important;*/
+            /*overflow-x: auto;*/
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .header-row input {
+            width: 100%;
+        }
+        /* Sticky section headers */
+        label.sticky-top {
+            position: sticky;
+            top: 0;
+            background-color: #fff;
+            z-index: 10;
+            padding-top: 0.25rem;
+            padding-bottom: 0.25rem;
+        }
+        /* Scrollable request headers container */
+        #headersContainerWrapper {
+            max-height: 250px;
+            overflow:auto;
+        }
+
+        /* Dark Mode Overrides */
+        html[data-bs-theme='dark'] body {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        html[data-bs-theme='dark'] .card, html[data-bs-theme='dark'] .form-control, html[data-bs-theme='dark'] .CodeMirror {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+        html[data-bs-theme='dark'] .CodeMirror-gutters {
+            background: #1e1e1e;
+            border-right: 1px solid #555;
+        }
+        html[data-bs-theme='dark'] .CodeMirror-cursor {
+            border-left: 1px solid #fff;
+        }
+        .request-body-scroll {
+            height: 180px !important;
+            max-height: 180px !important;
+            overflow-y: scroll !important;
+            overflow-x: auto;
+            resize: vertical;
+        }
+
+        .scroll-textarea {
+            overflow-y: auto;
+            resize: vertical;
+            white-space: pre;
+            max-height: 300px;
+        }
+
+    </style>
+</head>
+
+<body>
+<div class="d-flex" style="height:100vh;">
+
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <!-- Main -->
+    <main class="flex-fill d-flex flex-column p-4">
+
+        <div class="toast-container position-fixed top-0 start-50 p-3">
+
+            <!-- SUCCESS TOAST -->
+            <div th:if="${toastSuccess}"
+                 class="toast align-items-center text-bg-success border-0 show"
+                 role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-check-circle"></i>
+                        <span th:text="${toastSuccess}"></span>
+                    </div>
+                    <button class="btn-close btn-close-white me-2 m-auto"
+                            data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+
+            <!-- ERROR TOAST -->
+            <div th:if="${toastError}"
+                 class="toast align-items-center text-bg-danger border-0 show"
+                 role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <span th:text="${toastError}"></span>
+                    </div>
+                    <button class="btn-close btn-close-white me-2 m-auto"
+                            data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-shrink-0">
+            <h2 class="mb-0">API Skyvva Configuration</h2>
+            <span class="badge bg-dark fs-6">
+                Domain: <strong>localhost:<span th:text="${serverPort}"></span>/skyvva.api</strong>
+            </span>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="flex-fill overflow-auto">
+
+            <!-- API Config Form -->
+            <form th:action="@{'/page/api-config/save'(id=${config.id})}" th:object="${config}" method="post" class="card shadow-sm p-4 mb-4">
+
+                <!-- Basic Info Section -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">API Name</label>
+                        <input type="text" id="apiName" th:field="*{name}" class="form-control" placeholder="user-profile" onkeyup="generateUrl()" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Method</label>
+                        <select class="form-select" th:field="*{method}" onchange="generateSwagger()">
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="DELETE">DELETE</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Version</label>
+                        <select class="form-select" id="apiVersion" onchange="generateUrl()">
+                            <option value="v1">v1</option>
+                            <option value="v2">v2</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Generated URL</label>
+                        <div class="input-group">
+                            <span class="input-group-text">http://localhost:<span th:text="${serverPort}"></span>/skyvva.api/</span>
+                            <input type="text" id="apiUrl" th:field="*{url}" class="form-control" readonly>
+                            <button type="button" class="btn btn-outline-secondary" onclick="copyUrl()">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Headers Section -->
+                <div class="mb-3">
+                    <label class="form-label">Request Headers</label>
+                    <div id="headersContainerWrapper" class="mb-2">
+                        <div id="headersContainer" class="p-2">
+                            <div th:each="h, stat : ${config.headers}" class="row g-2 mb-1 header-row">
+                                <div class="col">
+                                    <input type="text" th:name="|headers[${stat.index}].key|" th:value="${h.key}" class="form-control header-key" placeholder="Key">
+                                </div>
+                                <div class="col">
+                                    <input type="text" th:name="|headers[${stat.index}].value|" th:value="${h.value}" class="form-control header-value" placeholder="Value">
+                                </div>
+                                <div class="col-auto">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="removeHeaderRow(this)">-</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addHeaderRow()">+ Header</button>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Request Body</label>
+                    <textarea id="requestBody" th:field="*{requestBody}" class="form-control" rows="6" ></textarea>
+                    <div class="mt-1">
+                        <select id="requestFormat" th:field="*{requestFormat}" class="form-select w-auto d-inline-block">
+                            <option value="json">JSON</option>
+                            <option value="xml">XML</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="beautifyRequest()">Beautify</button>
+                    </div>
+                </div>
+
+                <!-- Status Code Section -->
+                <div class="mb-3">
+                    <label class="form-label">Status Code</label>
+                    <select class="form-select" th:field="*{statusCode}">
+                        <option value="200">200 OK</option>
+                        <option value="201">201 Created</option>
+                        <option value="400">400 Bad Request</option>
+                        <option value="401">401 Unauthorized</option>
+                        <option value="404">404 Not Found</option>
+                        <option value="500">500 Server Error</option>
+                    </select>
+                </div>
+
+                <!-- Response Body -->
+                <div class="mb-3">
+                    <label class="form-label">Response Body</label>
+                    <textarea id="responseBody" th:field="*{responseBody}" class="form-control" rows="6"></textarea>
+                    <div class="mt-1">
+                        <select id="responseFormat" th:field="*{responseFormat}" class="form-select w-auto d-inline-block">
+                            <option value="json">JSON</option>
+                            <option value="xml">XML</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="beautifyResponse()">Beautify</button>
+                    </div>
+                </div>
+
+<!--                &lt;!&ndash; Status Code Section &ndash;&gt;-->
+<!--                <div class="mb-3">-->
+<!--                    <label class="form-label">Status Code</label>-->
+<!--                    <select class="form-select" th:field="*{statusCode}">-->
+<!--                        <option value="200">200 OK</option>-->
+<!--                        <option value="201">201 Created</option>-->
+<!--                        <option value="400">400 Bad Request</option>-->
+<!--                        <option value="401">401 Unauthorized</option>-->
+<!--                        <option value="404">404 Not Found</option>-->
+<!--                        <option value="500">500 Server Error</option>-->
+<!--                    </select>-->
+<!--                </div>-->
+
+                <!-- Actions -->
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save API</button>
+                    <button type="button" class="btn btn-success" onclick="mockTest()"><i class="bi bi-play-circle"></i> Test API</button>
+<!--                    <button type="reset" class="btn btn-outline-secondary"><i class="bi bi-plus-circle"></i> New API</button>-->
+                </div>
+
+            </form>
+
+            <!-- Skyvva Result -->
+            <div class="card mt-4 shadow-sm mb-4">
+                <div class="card-header"><i class="bi bi-braces"></i> Skyvva Execution Result</div>
+                <div class="card-body"><pre id="mockResult" class="mb-0 text-success"></pre></div>
+            </div>
+
+            <!-- Swagger Preview -->
+            <div class="card mt-4 shadow-sm mb-4">
+                <div class="card-header"><i class="bi bi-diagram-3"></i> Swagger Preview</div>
+                <div class="card-body"><pre id="swaggerPreview"></pre></div>
+            </div>
+
+        </div>
+
+    </main>
+</div>
+<script>
+    const SERVER_PORT = "[[${serverPort}]]";
+    let fomat1 = document.getElementById("requestFormat").value;
+    let fomat2 = document.getElementById("responseFormat").value;
+
+    /* CodeMirror Editors */
+    let requestEditor = CodeMirror.fromTextArea(document.getElementById("requestBody"), {
+        lineNumbers: true,
+        mode: "application/xml",
+        theme: "default",
+        viewportMargin: Infinity,
+        lineWrapping: true
+    });
+
+    let responseEditor = CodeMirror.fromTextArea(document.getElementById("responseBody"), {
+        lineNumbers: true,
+        mode: "application/xml",
+        theme: "default",
+        viewportMargin: Infinity,
+        lineWrapping: true
+    });
+
+    function setEditorTheme(theme) {
+        const editorTheme = theme === 'dark' ? 'dracula' : 'default';
+        const editormode1 = fomat1 === 'json' ? 'application/json' : 'application/xml';
+        const editormode2 = fomat2 === 'json' ? 'application/json' : 'application/xml';
+        requestEditor.setOption('mode', editormode1);
+        responseEditor.setOption('mode', editormode2);
+        requestEditor.setOption('theme', editorTheme);
+        responseEditor.setOption('theme', editorTheme);
+    }
+
+    /* Detect Dark Mode change */
+    function applyTheme(theme) {
+        document.documentElement.setAttribute("data-bs-theme", theme);
+        localStorage.setItem("theme", theme);
+        setEditorTheme(theme);
+    }
+
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute("data-bs-theme");
+        applyTheme(current === "dark" ? "light" : "dark");
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const savedTheme = localStorage.getItem("theme") || "light";
+        applyTheme(savedTheme);
+    });
+
+    document.getElementById("requestFormat").addEventListener("change", function() {
+        requestEditor.setOption("mode", this.value === "json" ? "application/json" : "application/xml");
+    });
+    document.getElementById("responseFormat").addEventListener("change", function() {
+        responseEditor.setOption("mode", this.value === "json" ? "application/json" : "application/xml");
+    });
+
+    /* URL & Swagger */
+    function generateUrl() {
+        const name = document.getElementById("apiName").value.toLowerCase().trim().replace(/\s+/g, "-");
+        const version = document.getElementById("apiVersion").value;
+        document.getElementById("apiUrl").value = name ? `${version}/${name}` : "";
+        generateSwagger();
+    }
+
+    function copyUrl() {
+        const fullUrl = `http://localhost:${SERVER_PORT}/skyvva.api/${document.getElementById("apiUrl").value}`;
+        navigator.clipboard.writeText(fullUrl);
+        alert("Copied: " + fullUrl);
+    }
+
+    function generateSwagger() {
+        const method = document.querySelector("[name='method']").value;
+        const url = "/" + document.getElementById("apiUrl").value;
+        const swagger = {
+            openapi: "3.0.0",
+            info: { title: "Skyvva API", version: "1.0.0" },
+            servers: [{ url:`http://localhost:${SERVER_PORT}/skyvva.api`  }],
+            paths: { [url]: { [method.toLowerCase()]: { responses: { "200": { description: "Skyvva response" } } } } }
+        };
+        document.getElementById("swaggerPreview").textContent = JSON.stringify(swagger, null, 2);
+    }
+
+    /* Mock Test Result */
+    function mockTest() {
+        const response = responseEditor.getValue();
+        document.getElementById("mockResult").textContent = response || "No response configured";
+    }
+
+    /* Beautify JSON / XML */
+    function beautifyRequest() {
+        const format = document.getElementById("requestFormat").value;
+        if (!requestEditor.getValue().trim()) return;
+        try {
+            if (format === "json") requestEditor.setValue(JSON.stringify(JSON.parse(requestEditor.getValue()), null, 4));
+            else if (format === "xml") requestEditor.setValue(html_beautify(requestEditor.getValue(), { indent_size: 4 }));
+        } catch (e) { alert("Invalid " + format.toUpperCase() + ": " + e.message); }
+    }
+
+    function beautifyResponse() {
+        const format = document.getElementById("responseFormat").value;
+        if (!responseEditor.getValue().trim()) return;
+        try {
+            if (format === "json") responseEditor.setValue(JSON.stringify(JSON.parse(responseEditor.getValue()), null, 4));
+            else if (format === "xml") responseEditor.setValue(html_beautify(responseEditor.getValue(), { indent_size: 4 }));
+        } catch (e) { alert("Invalid " + format.toUpperCase() + ": " + e.message); }
+    }
+
+    /* Dynamic Headers */
+    let headerIndex = document.querySelectorAll(".header-row").length;
+
+    function addHeaderRow() {
+        const container = document.getElementById("headersContainer");
+        const row = document.createElement("div");
+        row.className = "row g-2 mb-1 header-row";
+        row.innerHTML = `
+            <div class="col">
+                <input type="text" name="headers[${headerIndex}].key" class="form-control header-key" placeholder="Key">
+            </div>
+            <div class="col">
+                <input type="text" name="headers[${headerIndex}].value" class="form-control header-value" placeholder="Value">
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="removeHeaderRow(this)">-</button>
+            </div>
+        `;
+        container.appendChild(row);
+        headerIndex++;
+    }
+
+    function removeHeaderRow(btn) {
+        btn.closest(".header-row").remove();
+    }
+
+    document.querySelector("form").addEventListener("submit", function () {
+        document.querySelectorAll(".header-row").forEach(row => {
+            const key = row.querySelector(".header-key").value.trim();
+            const val = row.querySelector(".header-value").value.trim();
+            if (!key && !val) row.remove();
+        });
+    });
+
+    // Auto-hide toast
+    setTimeout(() => {
+        document.querySelectorAll('.toast').forEach(t => t.remove());
+    }, 3500);
+
+</script>
+</body>
+</html>

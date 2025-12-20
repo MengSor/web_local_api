@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+<div th:fragment="sidebar">
+    <nav class="vh-100 d-flex flex-column justify-content-between p-3 border-end sidebar-nav" style="width:240px;">
+
+        <div>
+            <h5 class="mb-4 fw-bold sidebar-title">API Test</h5>
+
+            <ul class="nav nav-pills flex-column gap-1">
+                <li class="nav-item">
+                    <a th:href="@{/page/home}"
+                       class="nav-link d-flex align-items-center sidebar-link"
+                       th:classappend="${activePage=='home'} ? 'active'">
+                        <i class="bi bi-house me-2"></i>
+                        Home
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a th:href="@{/page/create-new-api}"
+                       class="nav-link d-flex align-items-center sidebar-link"
+                       th:classappend="${activePage=='create-new-api'} ? 'active'">
+                        <i class="bi bi-sliders me-2"></i>
+                        API Config
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a th:href="@{/page/request-log}"
+                       class="nav-link d-flex align-items-center sidebar-link"
+                       th:classappend="${activePage=='request-log'} ? 'active'">
+                        <i class="bi bi-list-check me-2"></i>
+                        Request Log
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a th:href="@{/page/setting}"
+                       class="nav-link d-flex align-items-center sidebar-link"
+                       th:classappend="${activePage=='setting'} ? 'active'">
+                        <i class="bi bi-gear me-2"></i>
+                        Setting
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Dark Mode Toggle Button -->
+        <div class="mt-4">
+            <button id="themeToggleBtn" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
+                <i id="themeIcon" class="bi me-2"></i>
+                Toggle Dark Mode
+            </button>
+        </div>
+    </nav>
+
+    <!-- Sidebar Custom Style -->
+    <style>
+        .sidebar-nav {
+            background-color: var(--bs-body-bg, #f8f9fa);
+        }
+        .sidebar-title {
+            color: var(--bs-body-color, #212529);
+        }
+        .sidebar-link {
+            border-radius: 6px;
+            font-weight: 500;
+            color: var(--bs-body-color, #212529);
+        }
+        .sidebar-link:hover {
+            background-color: var(--bs-gray-200, #e9ecef);
+        }
+        .sidebar-link.active {
+            background-color: var(--bs-primary, #0d6efd);
+            color: #fff !important;
+        }
+        .sidebar-link.active i {
+            color: #fff;
+        }
+
+        /* Dark Mode Overrides */
+        html[data-bs-theme='dark'] .sidebar-nav {
+            background-color: #212529;
+        }
+        html[data-bs-theme='dark'] .sidebar-title {
+            color: #f8f9fa;
+        }
+        html[data-bs-theme='dark'] .sidebar-link {
+            color: #f8f9fa;
+        }
+        html[data-bs-theme='dark'] .sidebar-link:hover {
+            background-color: #343a40;
+        }
+        html[data-bs-theme='dark'] .sidebar-link.active {
+            background-color: #0d6efd;
+            color: #fff !important;
+        }
+        #themeToggleBtn {
+            border-radius: 6px;
+        }
+    </style>
+
+    <!-- Dark Mode Script -->
+    <script>
+        function applyTheme(theme) {
+            document.documentElement.setAttribute("data-bs-theme", theme);
+            localStorage.setItem("theme", theme);
+            updateIcon(theme);
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute("data-bs-theme");
+            applyTheme(current === "dark" ? "light" : "dark");
+        }
+
+        function updateIcon(theme) {
+            const icon = document.getElementById("themeIcon");
+            if(theme === "dark") {
+                icon.className = "bi bi-sun-fill me-2";
+            } else {
+                icon.className = "bi bi-moon-stars-fill me-2";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Load saved theme
+            const savedTheme = localStorage.getItem("theme") || "light";
+            applyTheme(savedTheme);
+
+            // Button click
+            document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
+        });
+    </script>
+
+</div>
+</body>
+</html>
+
+
