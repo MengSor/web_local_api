@@ -90,6 +90,13 @@ public class ApiConfigServiceImpl implements ApiConfigService {
         return null;
     }
 
+    @Override
+    public void delete(Long id) {
+        List<ApiConfig> apis = loadFromFile();
+        apis.removeIf(a -> a.getId().equals(id));
+        writeToFile(apis);
+    }
+
     @SuppressWarnings("unchecked")
     private List<ApiConfig> loadFromFile() {
 

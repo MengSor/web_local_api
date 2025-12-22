@@ -32,6 +32,7 @@ public class WebController {
 
     @GetMapping("/home")
     public String home(Model model) {
+        log.info("Home page loaded");
         model.addAttribute("activePage", "home");
         return "home";
     }
@@ -143,7 +144,7 @@ public class WebController {
 
     // Show all logs and optionally select one
     @GetMapping("/request-log")
-    public String viewLogs(@RequestParam(value = "id", required = false) Long id, Model model) {
+    public String viewLogs(@RequestParam(value = "id", required = false) String id, Model model) {
         List<RequestLog> logs = requestLogService.getAllLogs();
         RequestLog selectedLog = null;
 

@@ -1,8 +1,9 @@
 package org.mengsor.web_local_api.services.serviceImpl;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.mengsor.web_local_api.component.RequestMismatchReporter;
 import org.mengsor.web_local_api.model.ApiConfig;
 import org.mengsor.web_local_api.model.response.ApiResponse;
 import org.mengsor.web_local_api.services.ApiConfigService;
@@ -12,26 +13,30 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.xml.sax.InputSource;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 
+@Slf4j
 @Service
 public class DynamicApiServiceImpl implements DynamicApiService {
 
     private final ApiConfigService apiConfigService;
     private final RequestLogService requestLogService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final RequestMismatchReporter reporter;
 
     public DynamicApiServiceImpl(ApiConfigService apiConfigService,
-                                 RequestLogService requestLogService) {
+                                 RequestLogService requestLogService,
+                                 RequestMismatchReporter reporter) {
         this.apiConfigService = apiConfigService;
         this.requestLogService = requestLogService;
+        this.reporter = reporter;
     }
 
     @Override
     public ApiResponse handleRequest(HttpServletRequest request, String requestBody) {
+
+        log.info("Received request: {} {}", request.getMethod(), request.getRequestURI());
         String apiPath = request.getRequestURI().replaceFirst(".*/skyvva.api/", "");
         String method = request.getMethod();
 
@@ -42,32 +47,58 @@ public class DynamicApiServiceImpl implements DynamicApiService {
                 .orElse(null);
 
         if (config == null) {
-            requestLogService.logFailed(request, requestBody, "API not configured");
+            requestLogService.logUnmatched(
+                    request,
+                    requestBody,
+                    null,
+                    "API not configured",
+                    "No matching API found for " + method + " " + apiPath,
+                    HttpStatus.NOT_FOUND.value()
+            );
+            log.error("API not configured: {} {}", method, apiPath);
             return new ApiResponse(false, "API not configured: " + method + " " + apiPath,
                     null, HttpStatus.NOT_FOUND.value());
         }
 
-        // Check request body requirement
-        if (requiresBody(method) && hasTemplate(config.getRequestBody())) {
-            if (requestBody == null || requestBody.isBlank()) {
-                requestLogService.logFailed(request, requestBody, "Request body is required");
-                return new ApiResponse(false, "Request body is required", null,
-                        HttpStatus.BAD_REQUEST.value());
-            }
-        }
-
         // Validate format
         if (!validateFormatSafe(requestBody, config.getRequestBody())) {
-            requestLogService.logFailed(request, requestBody, "Request body format invalid");
+            requestLogService.logUnmatched(
+                    request,
+                    requestBody,
+                    config,
+                    "Request body format invalid",
+                    null,
+                    HttpStatus.BAD_REQUEST.value()
+            );
+            log.error("Request body format invalid: {}", requestBody);
             return new ApiResponse(false, "Request body format invalid", null,
                     HttpStatus.BAD_REQUEST.value());
         }
 
         // Validate content
-        if (hasTemplate(config.getRequestBody()) &&
-                !bodyEquals(config.getRequestBody(), requestBody)) {
-            requestLogService.logFailed(request, requestBody, "Request body does not match template");
-            return new ApiResponse(false, "Request body does not match template", null,
+        List<String> headerDiffs = new ArrayList<>();
+        if (!config.getHeaders().isEmpty() && config.getHeaders().size() > 0) {
+            headerDiffs  = reporter.compareHeaders(request, config.getHeaders());
+        }
+        if ((hasTemplate(config.getRequestBody()) && !reporter.bodyEquals(config.getRequestBody(), requestBody))
+             || (config.getHeaders()!=null && headerDiffs.size() >0 && !headerDiffs.isEmpty())) {
+            String diffReport = reporter.buildNonMatchReport(
+                    request,
+                    config,
+                    requestBody,
+                    headerDiffs
+            );
+
+            requestLogService.logUnmatched(
+                    request,
+                    requestBody,
+                    config,
+                    "Request does not match template",
+                    diffReport,
+                    HttpStatus.BAD_REQUEST.value()
+            );
+            log.error("Request does not match template: {}", requestBody);
+            return new ApiResponse(false, "Request does not match template", null,
                     HttpStatus.BAD_REQUEST.value());
         }
 
@@ -76,8 +107,15 @@ public class DynamicApiServiceImpl implements DynamicApiService {
         headers.setContentType(detectMediaType(config.getResponseBody()));
 
         // Log success
-        requestLogService.logMatched(request, requestBody, config);
+        requestLogService.logMatched(
+                request,
+                requestBody,
+                config,
+                config.getResponseBody(),
+                config.getStatusCode()
+        );
 
+        log.info("Received request successfully");
         return new ApiResponse(true, "Success", config.getResponseBody(), config.getStatusCode());
     }
 
@@ -87,24 +125,15 @@ public class DynamicApiServiceImpl implements DynamicApiService {
     }
 
     private boolean hasTemplate(String template) {
+        log.debug("Checking if template is present: {}", template);
         return template != null && !template.isBlank();
     }
 
     private boolean validateFormatSafe(String requestBody, String template) {
+        log.debug("Validating format of request body: {} against template: {}", requestBody, template);
         try {
-            validateFormat(requestBody, template);
+            reporter.validateFormat(requestBody, template);
             return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private boolean bodyEquals(String template, String requestBody) {
-        // Compare actual body with template
-        try {
-            JsonNode templateNode = objectMapper.readTree(template);
-            JsonNode requestNode = objectMapper.readTree(requestBody);
-            return templateNode.equals(requestNode);
         } catch (Exception e) {
             return false;
         }
@@ -116,23 +145,5 @@ public class DynamicApiServiceImpl implements DynamicApiService {
         if (t.startsWith("{")) return MediaType.APPLICATION_JSON;
         if (t.startsWith("<")) return MediaType.APPLICATION_XML;
         return MediaType.TEXT_PLAIN;
-    }
-
-    private void validateFormat(String actual, String template) {
-        if (actual == null || template == null) return;
-
-        MediaType type = detectMediaType(template);
-
-        try {
-            if (MediaType.APPLICATION_JSON.equals(type)) {
-                objectMapper.readTree(actual);
-            } else if (MediaType.APPLICATION_XML.equals(type)) {
-                DocumentBuilderFactory.newInstance()
-                        .newDocumentBuilder()
-                        .parse(new InputSource(new StringReader(actual)));
-            }
-        } catch (Exception e) {
-            return;
-        }
     }
 }

@@ -11,4 +11,5 @@ public interface ApiConfigService {
     void clear();
     List<ApiConfig> findAll();
     ApiConfig findByUrl(String url);
+    void delete(Long id);
 }

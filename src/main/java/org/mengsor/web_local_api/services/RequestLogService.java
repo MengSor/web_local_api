@@ -11,7 +11,9 @@ public interface RequestLogService {
     List<RequestLog> getLogs();
     void saveLog(String url, String method, String requestBody, String responseBody, int status, long duration);
     void clearAllLogs();
-    RequestLog getLogById(Long id);
+    RequestLog getLogById(String id);
     List<RequestLog> getAllLogs();
     void logFailed(HttpServletRequest request, String requestBody, String errorMessage);
+    void logUnmatched(HttpServletRequest request, String requestBody, ApiConfig config, String errorMessage, String nonMatchReport, int statusCode);
+    void logMatched(HttpServletRequest request, String requestBody, ApiConfig config, String responseBody, int statusCode);
 }

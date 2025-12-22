@@ -2,6 +2,7 @@ package org.mengsor.web_local_api.services.serviceImpl;
 
 import org.mengsor.web_local_api.model.yaml.YamlFactory;
 import org.mengsor.web_local_api.model.CreateNewApi;
+import org.mengsor.web_local_api.services.ApiConfigService;
 import org.mengsor.web_local_api.services.CreateNewApiService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,11 +21,13 @@ public class CreateNewApiServiceImpl implements CreateNewApiService {
     private final Path filePath;
     private final Yaml yaml =   YamlFactory.create();
     private final List<CreateNewApi> mockApis = new ArrayList<>();
+    private final ApiConfigService apiConfigService;
     @Value("${server.port}")
     private int serverPort;
 
-    public CreateNewApiServiceImpl(@Value("${create.new.cache.path}") String path) {
+    public CreateNewApiServiceImpl(@Value("${create.new.cache.path}") String path, ApiConfigService apiConfigService) {
         this.filePath = Path.of(path);
+        this.apiConfigService = apiConfigService;
     }
 
     @Override
@@ -114,6 +117,7 @@ public class CreateNewApiServiceImpl implements CreateNewApiService {
         List<CreateNewApi> apis = loadFromFile();
         apis.removeIf(a -> a.getId().equals(id));
         writeToFile(apis);
+        apiConfigService.delete(id);
     }
 
     @Override

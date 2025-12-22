@@ -17,10 +17,14 @@
             <h4>Request Log</h4>
             <div>
                 <form th:action="@{/page/request-log/clear}" method="post" class="d-inline">
-                    <button class="btn btn-danger btn-sm">Clear</button>
+                    <button class="btn btn-danger btn-sm">
+                        <i class="bi bi-trash"></i> Clear
+                    </button>
                 </form>
                 <form th:action="@{/page/request-log/refresh}" method="post" class="d-inline">
-                    <button class="btn btn-primary btn-sm">Refresh</button>
+                    <button class="btn btn-primary btn-sm">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
                 </form>
             </div>
         </div>
@@ -33,37 +37,49 @@
                     <div class="card-header fw-semibold">
                         Requests
                     </div>
-                    <div class="list-group list-group-flush overflow-auto" style="max-height: 75vh;">
+                    <div class="list-group list-group-flush overflow-auto" style="max-height:75vh;">
                         <a th:each="log : ${logs}"
-                           th:href="@{/request-log(id=${log.id})}"
+                           th:href="@{/page/request-log(id=${log.id})}"
                            class="list-group-item list-group-item-action d-flex flex-column">
 
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="badge"
                                       th:classappend="${log.matched} ? 'bg-success' : 'bg-danger'"
-                                      th:text="${log.matched} ? 'MATCHED' : 'UNMATCHED'">MATCHED</span>
+                                      th:text="${log.matched} ? 'MATCHED' : 'UNMATCHED'">
+                                </span>
+
                                 <span class="badge bg-primary ms-1" th:text="${log.method}">GET</span>
-                                <small class="ms-2 text-muted" th:text="${log.timestamp}"></small>
+
+                                <small class="ms-2 text-muted"
+                                       th:text="${log.timestamp}">
+                                </small>
                             </div>
-                            <div class="fw-semibold" th:text="${log.url}">/api/test</div>
+
+                            <div class="fw-semibold text-truncate"
+                                 th:text="${log.url}">/api/test</div>
                         </a>
                     </div>
                 </div>
             </div>
 
             <!-- RIGHT: Request Detail -->
-            <!-- RIGHT: Request Detail -->
             <div class="col-md-8 col-lg-9">
                 <div class="card h-100">
                     <div class="card-header fw-semibold">
                         Request Detail
                     </div>
-                    <div class="card-body overflow-auto" style="max-height: 75vh;">
 
+                    <div class="card-body overflow-auto" style="max-height:75vh;">
+
+                        <!-- SELECTED LOG -->
                         <div th:if="${selectedLog != null}">
-                            <h6 class="mb-3">Request @ <span th:text="${selectedLog.timestamp}"></span></h6>
 
-                            <!-- Basic Info -->
+                            <h6 class="mb-3">
+                                Request @
+                                <span th:text="${selectedLog.timestamp}"></span>
+                            </h6>
+
+                            <!-- BASIC INFO -->
                             <table class="table table-sm">
                                 <tr>
                                     <th style="width:180px;">URL</th>
@@ -71,7 +87,10 @@
                                 </tr>
                                 <tr>
                                     <th>Method</th>
-                                    <td><span class="badge bg-primary" th:text="${selectedLog.method}"></span></td>
+                                    <td>
+                                        <span class="badge bg-primary"
+                                              th:text="${selectedLog.method}"></span>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <th>Client IP</th>
@@ -80,54 +99,104 @@
                                 <tr>
                                     <th>Status</th>
                                     <td>
-                            <span class="badge"
-                                  th:classappend="${selectedLog.matched} ? 'bg-success' : 'bg-danger'"
-                                  th:text="${selectedLog.matched} ? 'MATCHED' : 'UNMATCHED'">MATCHED</span>
+                                        <span class="badge me-2"
+                                              th:classappend="${selectedLog.statusCode >= 400} ? 'bg-danger' : 'bg-success'"
+                                              th:text="${selectedLog.statusCode}">
+                                        </span>
+
+                                        <span class="badge"
+                                              th:classappend="${selectedLog.matched} ? 'bg-success' : 'bg-danger'"
+                                              th:text="${selectedLog.matchStatus} ? 'MATCHED' : 'UNMATCHED'">
+                                        </span>
                                     </td>
                                 </tr>
                             </table>
 
-                            <!-- Headers -->
+                            <!-- HEADERS -->
                             <h6 class="mt-4">Headers</h6>
                             <table class="table table-bordered table-sm">
                                 <tr th:each="h : ${selectedLog.headers}">
-                                    <th th:text="${h.key}"></th>
+                                    <th style="width:30%;" th:text="${h.key}"></th>
                                     <td th:text="${h.value}"></td>
                                 </tr>
                             </table>
 
-                            <!-- Request Body -->
-                            <h6 class="mt-4">Request Body</h6>
-                            <div th:if="${selectedLog.expectedRequestBody != null}">
-                                <div class="alert alert-info">
-                                    <strong>Expected Request:</strong>
-                                    <pre class="bg-light p-2 rounded" th:text="${selectedLog.expectedRequestBody}"></pre>
-
-                                    <strong>Actual Request:</strong>
-                                    <pre class="bg-light p-2 rounded" th:text="${selectedLog.requestBody}"></pre>
-
-                                    <div class="mt-2" th:if="${!selectedLog.matched}" style="color:red;">
-                                        ❌ Request does not match expected
-                                    </div>
-                                    <div class="mt-2" th:if="${selectedLog.matched}" style="color:green;">
-                                        ✅ Request matches expected
-                                    </div>
-                                </div>
+                            <!-- REQUEST BODY -->
+                            <div th:if="${(selectedLog.getRequestBody() != null && selectedLog.requestBody != '') && selectedLog.isMatched()}">
+                                <h6 class="mt-4">Request Body</h6>
+                                <pre class="bg-info-subtle p-3 rounded"
+                                     th:text="${selectedLog.requestBody}">
+                                </pre>
                             </div>
 
-                            <!-- Response Body -->
+
+                            <!-- EXPECTED BODY (OPTIONAL) -->
+                            <div th:if="${(selectedLog.expectedRequestBody != null && selectedLog.expectedRequestBody != '') && selectedLog.isMatched()}">
+                                <h6 class="mt-4">Expected Request</h6>
+                                <pre class="bg-info-subtle p-3 rounded border"
+                                     th:text="${selectedLog.expectedRequestBody}">
+                                </pre>
+                            </div>
+
+                            <!-- RESPONSE BODY -->
                             <h6 class="mt-4">Response Body</h6>
-                            <pre class="bg-light p-3 rounded" th:text="${selectedLog.responseBody}"></pre>
+                            <table class="table table-sm">
+                                <tr th:if="${selectedLog.isMatched()}">
+                                    <td>Matched stub</td>
+                                    <td>
+                                        <span
+                                                th:text="${selectedLog.apiName}">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Status</td>
+                                    <td>
+                                        <span class="badge me-2"
+                                              th:classappend="${selectedLog.statusCode >= 400} ? 'bg-danger' : 'bg-success'"
+                                              th:text="${selectedLog.statusCode}">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr th:if="${selectedLog.isMatched()}">
+                                    <td>Matched-Stub-Id</td>
+                                    <td>
+                                        <span
+                                                th:text="${selectedLog.id}">
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
 
-                            <div th:if="${selectedLog.isError()}" class="text-danger mt-2">
-                                ❌ Response contains error
+                            <div th:if="${selectedLog.responseBody != null && selectedLog.isMatched()}">
+                                   <pre class="bg-info-subtle p-3 rounded border"
+                                        th:text="${selectedLog.responseBody}">
+                                </pre>
                             </div>
-                            <div th:if="${!selectedLog.isError()}" class="text-success mt-2">
-                                ✅ Response OK
+
+                            <!-- NON-MATCH REPORT -->
+                            <div th:if="${!selectedLog.isMatched() && selectedLog.nonMatchReport != null}">
+                                <h6 class="mt-4">Non-match report</h6>
+                                <pre class="bg-info-subtle p-3 rounded border"
+                                     th:text="${selectedLog.nonMatchReport}">
+                                </pre>
                             </div>
+
+                            <div class="mt-2"
+                                 th:classappend="${selectedLog.statusCode >= 400} ? 'text-danger' : 'text-success'">
+                                <span th:if="${selectedLog.statusCode >= 400}">
+                                    ❌ Response contains error
+                                </span>
+                                <span th:if="${selectedLog.statusCode < 400}">
+                                    ✅ Response OK
+                                </span>
+                            </div>
+
                         </div>
 
-                        <div th:if="${selectedLog == null}" class="text-muted text-center mt-5">
+                        <!-- NO SELECTION -->
+                        <div th:if="${selectedLog == null}"
+                             class="text-muted text-center mt-5">
                             Select a request from the left panel
                         </div>
 
@@ -135,55 +204,59 @@
                 </div>
             </div>
 
-
         </div>
     </main>
 </div>
 
-<!-- Dark Mode Styling -->
+<!-- STYLES -->
 <style>
-    /* Main content light mode */
     .main-content {
         background-color: var(--bs-body-bg, #f8f9fa);
         color: var(--bs-body-color, #212529);
         min-height: 100vh;
     }
+
     .card-header {
         background-color: var(--bs-light, #f8f9fa);
     }
+
     .list-group-item {
         background-color: var(--bs-body-bg, #f8f9fa);
-        color: var(--bs-body-color, #212529);
     }
+
     .list-group-item:hover {
         background-color: var(--bs-gray-200, #e9ecef);
     }
-    pre.bg-light {
-        background-color: #f8f9fa !important;
+
+    pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 0.85rem;
     }
 
-    /* Dark Mode Overrides */
+    /* DARK MODE */
     html[data-bs-theme='dark'] .main-content {
         background-color: #121212;
         color: #f8f9fa;
     }
+
     html[data-bs-theme='dark'] .card-header {
         background-color: #212529;
         color: #f8f9fa;
     }
+
     html[data-bs-theme='dark'] .list-group-item {
         background-color: #212529;
         color: #f8f9fa;
     }
+
     html[data-bs-theme='dark'] .list-group-item:hover {
         background-color: #343a40;
     }
-    html[data-bs-theme='dark'] pre.bg-light {
+
+    html[data-bs-theme='dark'] pre {
         background-color: #212529 !important;
         color: #f8f9fa;
-    }
-    html[data-bs-theme='dark'] .text-muted {
-        color: #adb5bd !important;
     }
 </style>
 </body>

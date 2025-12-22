@@ -7,7 +7,7 @@ import java.util.Map;
 
 @Data
 public class RequestLog {
-    private Long id;
+    private String id;
     private String url;
     private String method;
     private String clientIp;
@@ -19,6 +19,9 @@ public class RequestLog {
     private long duration;
     private String timestamp;
     private Map<String, String> headers;
+    private String nonMatchReport;
+    private int statusCode;
+    private String apiName;
 
     public boolean isMatched() {
         return MatchStatus.MATCHED.equals(matchStatus);

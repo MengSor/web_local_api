@@ -17,7 +17,7 @@ public class ApiConfig {
     private String url;        // v1/user-profile
     private String method;     // GET, POST, PUT, DELETE
 
-    private List<ApiHeader> headers = new ArrayList<>();
+    private List<Header> headers = new ArrayList<>();
 
     private String requestFormat = "json";   // json | xml
     private String responseFormat = "json";
@@ -25,4 +25,12 @@ public class ApiConfig {
     private String responseBody;
 
     private int statusCode;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Header {
+        private String key;
+        private String value;
+    }
 }
