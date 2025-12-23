@@ -80,6 +80,21 @@
             white-space: pre;
             max-height: 300px;
         }
+        .param-editor {
+            border: 1px dashed #444;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .param-box {
+            max-height: 220px;
+            /*overflow-y: auto;*/
+        }
+
+        .param-row input {
+            background-color: #1e1e1e;
+            color: #fff;
+        }
 
     </style>
 </head>
@@ -173,42 +188,129 @@
                     </div>
                 </div>
 
-                <!-- Headers Section -->
+<!--                &lt;!&ndash; Headers Section &ndash;&gt;-->
+<!--                <div class="mb-3">-->
+<!--                    <label class="form-label">Request Headers</label>-->
+<!--                    <div id="headersContainerWrapper" class="mb-2">-->
+<!--                        <div id="headersContainer" class="p-2">-->
+<!--                            <div th:each="h, stat : ${config.headers}" class="row g-2 mb-1 header-row">-->
+<!--                                <div class="col">-->
+<!--                                    <input type="text" th:name="|headers[${stat.index}].key|" th:value="${h.key}" class="form-control header-key" placeholder="Key">-->
+<!--                                </div>-->
+<!--                                <div class="col">-->
+<!--                                    <input type="text" th:name="|headers[${stat.index}].value|" th:value="${h.value}" class="form-control header-value" placeholder="Value">-->
+<!--                                </div>-->
+<!--                                <div class="col-auto">-->
+<!--                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="removeHeaderRow(this)">-</button>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addHeaderRow()">+ Header</button>-->
+<!--                    <button type="button" class="btn btn-outline-primary btn-sm" >+ Query Param</button>-->
+<!--                </div>-->
+
+                <!-- Request Parameters -->
                 <div class="mb-3">
-                    <label class="form-label">Request Headers</label>
-                    <div id="headersContainerWrapper" class="mb-2">
-                        <div id="headersContainer" class="p-2">
-                            <div th:each="h, stat : ${config.headers}" class="row g-2 mb-1 header-row">
-                                <div class="col">
-                                    <input type="text" th:name="|headers[${stat.index}].key|" th:value="${h.key}" class="form-control header-key" placeholder="Key">
-                                </div>
-                                <div class="col">
-                                    <input type="text" th:name="|headers[${stat.index}].value|" th:value="${h.value}" class="form-control header-value" placeholder="Value">
-                                </div>
-                                <div class="col-auto">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="removeHeaderRow(this)">-</button>
-                                </div>
-                            </div>
-                        </div>
+                    <label class="form-label">Request Parameters</label>
+
+                    <!-- Buttons -->
+                    <div class="d-flex gap-2 mb-2">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openParam('headers')">+ Header</button>
+                        <button type="button" class="btn btn-success btn-sm" onclick="openParam('queries')">+ Query</button>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="openParam('cookies')">+ Cookie</button>
                     </div>
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addHeaderRow()">+ Header</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" >+ Query Param</button>
+
+                    <!-- EDITOR -->
+                    <div id="paramEditor" class="param-editor d-none">
+                        <div class="fw-bold mb-2">
+                            Editing: <span id="editingLabel"></span>
+                        </div>
+
+                        <div id="headersBox" class="param-box d-none">
+                            <th:block th:each="kv, iterStat : ${config.headers}">
+                                <div class="row g-2 mb-1 param-row align-items-center">
+                                    <div class="col">
+                                        <input type="text" th:name="|headers[${iterStat.index}].key|"
+                                               class="form-control" th:value="${kv.key}" placeholder="Key">
+                                    </div>
+                                    <div class="col">
+                                        <input type="text" th:name="|headers[${iterStat.index}].value|"
+                                               class="form-control" th:value="${kv.value}" placeholder="Value">
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                                onclick="this.closest('.row').remove()">-</button>
+                                    </div>
+                                </div>
+                            </th:block>
+                        </div>
+
+                        <div id="queriesBox" class="param-box d-none">
+                            <th:block th:each="kv, iterStat : ${config.queries}">
+                                <div class="row g-2 mb-1 param-row align-items-center">
+                                    <div class="col">
+                                        <input type="text" th:name="|queries[${iterStat.index}].key|"
+                                               class="form-control" th:value="${kv.key}" placeholder="Key">
+                                    </div>
+                                    <div class="col">
+                                        <input type="text" th:name="|queries[${iterStat.index}].value|"
+                                               class="form-control" th:value="${kv.value}" placeholder="Value">
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                                onclick="this.closest('.row').remove()">-</button>
+                                    </div>
+                                </div>
+                            </th:block>
+                        </div>
+
+                        <div id="cookiesBox" class="param-box d-none">
+                            <th:block th:each="kv, iterStat : ${config.cookies}">
+                                <div class="row g-2 mb-1 param-row align-items-center">
+                                    <div class="col">
+                                        <input type="text" th:name="|cookies[${iterStat.index}].key|"
+                                               class="form-control" th:value="${kv.key}" placeholder="Key">
+                                    </div>
+                                    <div class="col">
+                                        <input type="text" th:name="|cookies[${iterStat.index}].value|"
+                                               class="form-control" th:value="${kv.value}" placeholder="Value">
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                                onclick="this.closest('.row').remove()">-</button>
+                                    </div>
+                                </div>
+                            </th:block>
+                        </div>
+
+                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addParamRow()">+ Add</button>
+                    </div>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Request Body</label>
                     <textarea id="requestBody" th:field="*{requestBody}" class="form-control" rows="6" ></textarea>
-                    <div class="mt-1">
-                        <select id="requestFormat" th:field="*{requestFormat}" class="form-select w-auto d-inline-block">
+                    <div class="mt-2 d-flex align-items-center gap-2 beautify-box">
+                        <select id="requestFormat"
+                                th:field="*{requestFormat}"
+                                class="form-select form-select-sm" style="width:120px;">
                             <option value="json">JSON</option>
                             <option value="xml">XML</option>
                         </select>
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="beautifyRequest()">Beautify</button>
+
+                        <button type="button"
+                                class="btn btn-sm btn-primary"
+                                onclick="beautifyRequest()">
+                            <i class="bi bi-magic"></i> Beautify
+                        </button>
                     </div>
                 </div>
 
+                <hr style="margin:20px 0;">
+
                 <!-- Status Code Section -->
-                <div class="mb-3">
+                <div class="mb-3 col-md-2">
                     <label class="form-label">Status Code</label>
                     <select class="form-select" th:field="*{statusCode}">
                         <option value="200">200 OK</option>
@@ -220,37 +322,62 @@
                     </select>
                 </div>
 
-                <!-- Response Body -->
+                <!-- RESPONSE HEADERS -->
                 <div class="mb-3">
-                    <label class="form-label">Response Body</label>
-                    <textarea id="responseBody" th:field="*{responseBody}" class="form-control" rows="6"></textarea>
-                    <div class="mt-1">
-                        <select id="responseFormat" th:field="*{responseFormat}" class="form-select w-auto d-inline-block">
-                            <option value="json">JSON</option>
-                            <option value="xml">XML</option>
-                        </select>
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="beautifyResponse()">Beautify</button>
+                    <label class="form-label">Response Headers</label>
+
+                    <!-- Add Button -->
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addResponseHeader()">+ Header</button>
+
+                        <div id="responseHeadersWrapper" class="param-wrapper mt-2">
+                            <th:block th:each="rh, iterStat : ${config.responseHeaders}">
+                                <div class="row g-2 mb-1">
+                                    <div class="col">
+                                        <input type="text" th:name="|responseHeaders[${iterStat.index}].key|" class="form-control" th:value="${rh.key}" placeholder="Header">
+                                    </div>
+                                    <div class="col">
+                                        <input type="text" th:name="|responseHeaders[${iterStat.index}].key|" class="form-control" th:value="${rh.value}" placeholder="Value">
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.row').remove()">-</button>
+                                    </div>
+                                </div>
+                            </th:block>
+                        </div>
                     </div>
                 </div>
 
-<!--                &lt;!&ndash; Status Code Section &ndash;&gt;-->
-<!--                <div class="mb-3">-->
-<!--                    <label class="form-label">Status Code</label>-->
-<!--                    <select class="form-select" th:field="*{statusCode}">-->
-<!--                        <option value="200">200 OK</option>-->
-<!--                        <option value="201">201 Created</option>-->
-<!--                        <option value="400">400 Bad Request</option>-->
-<!--                        <option value="401">401 Unauthorized</option>-->
-<!--                        <option value="404">404 Not Found</option>-->
-<!--                        <option value="500">500 Server Error</option>-->
-<!--                    </select>-->
-<!--                </div>-->
+                <div class="mb-3">
+                    <label class="form-label">Response Body</label>
+
+                    <textarea id="responseBody"
+                              th:field="*{responseBody}"
+                              class="form-control"
+                              rows="6"></textarea>
+
+                    <div class="mt-2 d-flex align-items-center gap-2 beautify-box">
+                        <select id="responseFormat"
+                                th:field="*{responseFormat}"
+                                class="form-select form-select-sm" style="width:120px;">
+                            <option value="json">JSON</option>
+                            <option value="xml">XML</option>
+                        </select>
+
+                        <button type="button"
+                                class="btn btn-sm btn-primary"
+                                onclick="beautifyResponse()">
+                            <i class="bi bi-magic"></i> Beautify
+                        </button>
+                    </div>
+                </div>
+
+
 
                 <!-- Actions -->
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save API</button>
                     <button type="button" class="btn btn-success" onclick="mockTest()"><i class="bi bi-play-circle"></i> Test API</button>
-<!--                    <button type="reset" class="btn btn-outline-secondary"><i class="bi bi-plus-circle"></i> New API</button>-->
                 </div>
 
             </form>
@@ -378,27 +505,113 @@
         } catch (e) { alert("Invalid " + format.toUpperCase() + ": " + e.message); }
     }
 
-    /* Dynamic Headers */
-    let headerIndex = document.querySelectorAll(".header-row").length;
+    /* ---------------- Request Params ---------------- */
+    let activeParam = null;
+    const paramMeta = {
+        headers: { label: 'Header', index: 0 },
+        queries: { label: 'Query Param', index: 0 },
+        cookies: { label: 'Cookie', index: 0 }
+    };
 
-    function addHeaderRow() {
-        const container = document.getElementById("headersContainer");
+    // Initialize index based on existing rows
+    document.addEventListener('DOMContentLoaded', () => {
+        ['headers','queries','cookies'].forEach(type => {
+            const box = document.getElementById(`${type}Box`);
+            paramMeta[type].index = box.querySelectorAll('.param-row').length;
+        });
+
+        // Automatically open the first non-empty tab
+        if (paramMeta.headers.index > 0) {
+            openParam('headers');
+        } else if (paramMeta.queries.index > 0) {
+            openParam('queries');
+        } else if (paramMeta.cookies.index > 0) {
+            openParam('cookies');
+        }
+    });
+
+    function openParam(type) {
+        activeParam = type;
+        document.getElementById("paramEditor").classList.remove("d-none");
+        document.getElementById("editingLabel").textContent = paramMeta[type].label;
+
+        ['headers','queries','cookies'].forEach(t => {
+            document.getElementById(`${t}Box`).classList.add("d-none");
+        });
+        document.getElementById(`${type}Box`).classList.remove("d-none");
+    }
+
+    function addParamRow() {
+        if (!activeParam) return;
+
+        const meta = paramMeta[activeParam];
+        const box = document.getElementById(`${activeParam}Box`);
+
         const row = document.createElement("div");
-        row.className = "row g-2 mb-1 header-row";
+        row.className = "row g-2 mb-1 param-row align-items-center";
         row.innerHTML = `
+        <div class="col">
+            <input type="text" name="${activeParam}[${meta.index}].key" class="form-control" placeholder="Key">
+        </div>
+        <div class="col">
+            <input type="text" name="${activeParam}[${meta.index}].value" class="form-control" placeholder="Value">
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.row').remove()">-</button>
+        </div>
+    `;
+        box.appendChild(row);
+        meta.index++;
+    }
+
+    /* ---------------- Response Headers ---------------- */
+    let respIdx = 0;
+
+    // Initialize respIdx based on existing rows
+    document.addEventListener('DOMContentLoaded', () => {
+        const wrapper = document.getElementById("responseHeadersWrapper");
+        respIdx = wrapper.querySelectorAll('.row').length;
+    });
+
+    function addResponseHeader() {
+        const wrapper = document.getElementById("responseHeadersWrapper");
+
+        wrapper.insertAdjacentHTML("beforeend", `
+        <div class="row g-2 mb-1">
             <div class="col">
-                <input type="text" name="headers[${headerIndex}].key" class="form-control header-key" placeholder="Key">
+                <input name="responseHeaders[${respIdx}].key" class="form-control" placeholder="Header">
             </div>
             <div class="col">
-                <input type="text" name="headers[${headerIndex}].value" class="form-control header-value" placeholder="Value">
+                <input name="responseHeaders[${respIdx}].value" class="form-control" placeholder="Value">
             </div>
             <div class="col-auto">
-                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="removeHeaderRow(this)">-</button>
+                <button type="button" class="btn btn-outline-danger btn-sm"
+                        onclick="this.closest('.row').remove()">-</button>
             </div>
-        `;
-        container.appendChild(row);
-        headerIndex++;
+        </div>
+    `);
+        respIdx++;
     }
+    // let headerIndex = document.querySelectorAll(".header-row").length;
+    //
+    // function addHeaderRow() {
+    //     const container = document.getElementById("headersContainer");
+    //     const row = document.createElement("div");
+    //     row.className = "row g-2 mb-1 header-row";
+    //     row.innerHTML = `
+    //         <div class="col">
+    //             <input type="text" name="headers[${headerIndex}].key" class="form-control header-key" placeholder="Key">
+    //         </div>
+    //         <div class="col">
+    //             <input type="text" name="headers[${headerIndex}].value" class="form-control header-value" placeholder="Value">
+    //         </div>
+    //         <div class="col-auto">
+    //             <button type="button" class="btn btn-outline-secondary btn-sm" onclick="removeHeaderRow(this)">-</button>
+    //         </div>
+    //     `;
+    //     container.appendChild(row);
+    //     headerIndex++;
+    // }
 
     function removeHeaderRow(btn) {
         btn.closest(".header-row").remove();

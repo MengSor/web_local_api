@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>org.mengsor</groupId>
 	<artifactId>web_local_api</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>web_local_api</name>
 	<description>web_local_api</description>
 	<url/>

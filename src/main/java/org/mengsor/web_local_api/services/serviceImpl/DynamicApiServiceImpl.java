@@ -1,6 +1,7 @@
 package org.mengsor.web_local_api.services.serviceImpl;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.mengsor.web_local_api.component.RequestMismatchReporter;
@@ -14,8 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -40,6 +41,16 @@ public class DynamicApiServiceImpl implements DynamicApiService {
         String apiPath = request.getRequestURI().replaceFirst(".*/skyvva.api/", "");
         String method = request.getMethod();
 
+        // Get query parameters
+        Map<String, String[]> queryParams = request.getParameterMap();
+
+        // Get cookies
+        Map<String, String> cookies = new HashMap<>();
+        if (request.getCookies() != null) {
+            Arrays.stream(request.getCookies())
+                    .forEach(c -> cookies.put(c.getName(), c.getValue()));
+        }
+
         ApiConfig config = apiConfigService.findAll().stream()
                 .filter(api -> apiPath.equalsIgnoreCase(api.getUrl()) &&
                         method.equalsIgnoreCase(api.getMethod()))
@@ -59,6 +70,51 @@ public class DynamicApiServiceImpl implements DynamicApiService {
             return new ApiResponse(false, "API not configured: " + method + " " + apiPath,
                     null, HttpStatus.NOT_FOUND.value());
         }
+
+        List<ApiConfig.keyValuePair> queryList = convertToKeyValuePairList(config.getQueries());
+        List<ApiConfig.keyValuePair> cookieList  = convertToKeyValuePairList(config.getCookies());
+
+        // --- Validate query parameters ---
+        List<String> missingQueries = new ArrayList<>();
+        Map<String, String> requiredQueries = toMap(queryList);
+        for (Map.Entry<String, String> entry : requiredQueries.entrySet()) {
+            String key = entry.getKey();
+            String expected = entry.getValue();
+            String[] actual = queryParams.get(key);
+
+            if (actual == null || !expected.equals(actual[0])) {
+                missingQueries.add(key);
+            }
+        }
+        if (!missingQueries.isEmpty()) {
+            String msg = "Missing or invalid query parameters: " + String.join(", ", missingQueries);
+            requestLogService.logUnmatched(request, requestBody, config, "Missing/Invalid query parameters",
+                    msg, HttpStatus.BAD_REQUEST.value());
+            log.error(msg);
+            return new ApiResponse(false, msg, null, HttpStatus.BAD_REQUEST.value());
+        }
+
+
+        Map<String, String> requiredCookies = toMap(cookieList);
+        List<String> missingCookies = new ArrayList<>();
+        for (Map.Entry<String, String> entry : requiredCookies.entrySet()) {
+            String key = entry.getKey();
+            String expectedValue = entry.getValue();
+            String actualValue = cookies.get(key);
+
+            if (actualValue == null || (expectedValue != null && !expectedValue.equals(actualValue))) {
+                missingCookies.add(key);
+            }
+        }
+
+        if (!missingCookies.isEmpty()) {
+            String msg = "Missing or invalid cookies: " + String.join(", ", missingCookies);
+            requestLogService.logUnmatched(request, requestBody, config, "Missing/Invalid cookies", msg,
+                    HttpStatus.BAD_REQUEST.value());
+            log.error(msg);
+            return new ApiResponse(false, msg, null, HttpStatus.BAD_REQUEST.value());
+        }
+
 
         // Validate format
         if (!validateFormatSafe(requestBody, config.getRequestBody())) {
@@ -98,7 +154,7 @@ public class DynamicApiServiceImpl implements DynamicApiService {
                     HttpStatus.BAD_REQUEST.value()
             );
             log.error("Request does not match template: {}", requestBody);
-            return new ApiResponse(false, "Request does not match template", null,
+            return new ApiResponse(false, "Request does not match template", diffReport,
                     HttpStatus.BAD_REQUEST.value());
         }
 
@@ -146,4 +202,20 @@ public class DynamicApiServiceImpl implements DynamicApiService {
         if (t.startsWith("<")) return MediaType.APPLICATION_XML;
         return MediaType.TEXT_PLAIN;
     }
+
+    private Map<String, String> toMap(List<ApiConfig.keyValuePair> list) {
+        if (list == null) return Collections.emptyMap();
+        return list.stream().collect(Collectors.toMap(ApiConfig.keyValuePair::getKey,
+                ApiConfig.keyValuePair::getValue));
+    }
+
+    private List<ApiConfig.keyValuePair> convertToKeyValuePairList(List<?> list) {
+        if (list == null) return Collections.emptyList();
+        ObjectMapper mapper = new ObjectMapper();
+        return list.stream()
+                .map(obj -> mapper.convertValue(obj, ApiConfig.keyValuePair.class))
+                .collect(Collectors.toList());
+    }
+
+
 }

@@ -140,6 +140,9 @@ public class ApiConfigServiceImpl implements ApiConfigService {
         api.setRequestFormat((String) map.get("requestFormat"));
         api.setResponseFormat((String) map.get("responseFormat"));
         api.setStatusCode((Integer) map.get("statusCode"));
+        api.setCookies(List.class.cast(map.get("cookies")));
+        api.setQueries(List.class.cast(map.get("queries")));
+        api.setResponseHeaders(List.class.cast(map.get("responseHeaders")));
 
         return api;
     }

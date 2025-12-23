@@ -118,13 +118,13 @@ public class WebController {
             log.info("API Config saved successfully!");
 
         } catch (IllegalArgumentException e) {
-            // ❌ Validation error (JSON / XML)
+            // Validation error (JSON / XML)
             log.error("Validation error: {}", e.getMessage());
             model.addAttribute("config", config);
             model.addAttribute("serverPort", serverPort);
             model.addAttribute("toastError", e.getMessage());
         } catch (Exception e) {
-            // ❌ Unexpected error
+            // Unexpected error
             log.error("Failed to save API Config: {}", e.getMessage());
             model.addAttribute("config", config);
             model.addAttribute("serverPort", serverPort);

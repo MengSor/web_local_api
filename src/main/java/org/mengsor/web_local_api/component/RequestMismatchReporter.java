@@ -165,8 +165,8 @@ public class RequestMismatchReporter {
 
         for (Object obj : expectedHeaders ) {
 
-            ApiConfig.Header expected =
-                    mapper.convertValue(obj, ApiConfig.Header.class);
+            ApiConfig.keyValuePair expected =
+                    mapper.convertValue(obj, ApiConfig.keyValuePair.class);
 
             String actualValue = header.entrySet()
                     .stream()
