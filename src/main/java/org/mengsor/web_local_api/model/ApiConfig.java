@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -16,10 +17,10 @@ public class ApiConfig {
     private String url;        // v1/user-profile
     private String method;     // GET, POST, PUT, DELETE
 
-    private List<keyValuePair> headers;
-    private List<keyValuePair> responseHeaders;
-    private List<keyValuePair> queries;
-    private List<keyValuePair> cookies;
+    private List<keyValuePair> headers = new ArrayList<>();
+    private List<keyValuePair> responseHeaders = new ArrayList<>();
+    private List<keyValuePair> queries = new ArrayList<>();
+    private List<keyValuePair> cookies = new ArrayList<>();
 
     private String requestFormat = "json";   // json | xml
     private String responseFormat = "json";

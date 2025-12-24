@@ -31,7 +31,7 @@ public class DynamicAuthorizationManager
             RequestAuthorizationContext context) {
 
         SettingCache cache = cacheService.loadDecrypted();
-        String mode = cache.getSecurityMode().toString();
+        String mode = cache.getSecurityMode() != null ? cache.getSecurityMode().toString() : "NONE";
         // Auth mode NONE → allow everything
         if (mode.equals("NONE")) {
             return new AuthorizationDecision(true);

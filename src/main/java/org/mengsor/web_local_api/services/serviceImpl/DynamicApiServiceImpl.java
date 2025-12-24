@@ -133,7 +133,8 @@ public class DynamicApiServiceImpl implements DynamicApiService {
 
         // Validate content
         List<String> headerDiffs = new ArrayList<>();
-        if (!config.getHeaders().isEmpty() && config.getHeaders().size() > 0) {
+
+        if ((config.getHeaders() != null && !config.getHeaders().isEmpty()) && config.getHeaders().size() > 0) {
             headerDiffs  = reporter.compareHeaders(request, config.getHeaders());
         }
         if ((hasTemplate(config.getRequestBody()) && !reporter.bodyEquals(config.getRequestBody(), requestBody))

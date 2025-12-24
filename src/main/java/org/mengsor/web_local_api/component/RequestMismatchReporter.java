@@ -468,7 +468,13 @@ public class RequestMismatchReporter {
 
             // ---------- XML ----------
             if (t.startsWith("<") && a.startsWith("<")) {
-                return xmlEquals(t, a);
+                String tm = t.trim().replaceAll(">\\s+<", "><")  // remove spaces between tags
+                        .replaceAll("\\r|\\n", "")   // remove line breaks
+                        .trim();
+                String am = a.replaceAll(">\\s+<", "><")  // remove spaces between tags
+                        .replaceAll("\\r|\\n", "")   // remove line breaks
+                        .trim();
+                return xmlEquals(tm, am);
             }
 
             // ---------- Plain text ----------

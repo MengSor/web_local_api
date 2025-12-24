@@ -188,28 +188,6 @@
                     </div>
                 </div>
 
-<!--                &lt;!&ndash; Headers Section &ndash;&gt;-->
-<!--                <div class="mb-3">-->
-<!--                    <label class="form-label">Request Headers</label>-->
-<!--                    <div id="headersContainerWrapper" class="mb-2">-->
-<!--                        <div id="headersContainer" class="p-2">-->
-<!--                            <div th:each="h, stat : ${config.headers}" class="row g-2 mb-1 header-row">-->
-<!--                                <div class="col">-->
-<!--                                    <input type="text" th:name="|headers[${stat.index}].key|" th:value="${h.key}" class="form-control header-key" placeholder="Key">-->
-<!--                                </div>-->
-<!--                                <div class="col">-->
-<!--                                    <input type="text" th:name="|headers[${stat.index}].value|" th:value="${h.value}" class="form-control header-value" placeholder="Value">-->
-<!--                                </div>-->
-<!--                                <div class="col-auto">-->
-<!--                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="removeHeaderRow(this)">-</button>-->
-<!--                                </div>-->
-<!--                            </div>-->
-<!--                        </div>-->
-<!--                    </div>-->
-<!--                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addHeaderRow()">+ Header</button>-->
-<!--                    <button type="button" class="btn btn-outline-primary btn-sm" >+ Query Param</button>-->
-<!--                </div>-->
-
                 <!-- Request Parameters -->
                 <div class="mb-3">
                     <label class="form-label">Request Parameters</label>
@@ -592,26 +570,6 @@
     `);
         respIdx++;
     }
-    // let headerIndex = document.querySelectorAll(".header-row").length;
-    //
-    // function addHeaderRow() {
-    //     const container = document.getElementById("headersContainer");
-    //     const row = document.createElement("div");
-    //     row.className = "row g-2 mb-1 header-row";
-    //     row.innerHTML = `
-    //         <div class="col">
-    //             <input type="text" name="headers[${headerIndex}].key" class="form-control header-key" placeholder="Key">
-    //         </div>
-    //         <div class="col">
-    //             <input type="text" name="headers[${headerIndex}].value" class="form-control header-value" placeholder="Value">
-    //         </div>
-    //         <div class="col-auto">
-    //             <button type="button" class="btn btn-outline-secondary btn-sm" onclick="removeHeaderRow(this)">-</button>
-    //         </div>
-    //     `;
-    //     container.appendChild(row);
-    //     headerIndex++;
-    // }
 
     function removeHeaderRow(btn) {
         btn.closest(".header-row").remove();
