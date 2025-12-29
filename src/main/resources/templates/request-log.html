@@ -114,10 +114,18 @@
 
                             <!-- HEADERS -->
                             <h6 class="mt-4">Headers</h6>
+<!--                            <table class="table table-bordered table-sm">-->
+<!--                                <tr th:each="h : ${selectedLog.headers}">-->
+<!--                                    <th style="width:30%;" th:text="${h.key}"></th>-->
+<!--                                    <td th:text="${h.value}"></td>-->
+<!--                                </tr>-->
+<!--                            </table>-->
                             <table class="table table-bordered table-sm">
                                 <tr th:each="h : ${selectedLog.headers}">
                                     <th style="width:30%;" th:text="${h.key}"></th>
-                                    <td th:text="${h.value}"></td>
+                                    <td>
+                                        <pre class="header-pre" th:text="${h.value}"></pre>
+                                    </td>
                                 </tr>
                             </table>
 
@@ -258,6 +266,19 @@
         background-color: #212529 !important;
         color: #f8f9fa;
     }
+    .header-pre {
+        max-height: 120px;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+        margin: 0;
+        background: #111;
+        color: #ddd;
+        padding: 6px;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+
 </style>
 </body>
 </html>

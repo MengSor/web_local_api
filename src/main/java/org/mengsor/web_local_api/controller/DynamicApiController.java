@@ -3,14 +3,12 @@ package org.mengsor.web_local_api.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import org.mengsor.web_local_api.model.response.ApiResponse;
 import org.mengsor.web_local_api.services.DynamicApiService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/skyvva.api")
+@RequestMapping("/query.api")
 public class DynamicApiController {
 
     private final DynamicApiService dynamicApiService;
@@ -27,7 +25,13 @@ public class DynamicApiController {
 
         ApiResponse response = dynamicApiService.handleRequest(request, requestBody);
 
-        return ResponseEntity.status(response.getStatus())
+        return ResponseEntity.status(response.getStatus()).contentType(MediaType.APPLICATION_XML)
+                .contentLength(response.getResponseBody() != null ? response.getResponseBody().length() : 0)
                 .body(response.getResponseBody() != null ? response.getResponseBody() : response.getMessage());
+    }
+
+    @GetMapping("/health")
+    public String health() {
+        return "OK";
     }
 }

@@ -134,6 +134,7 @@ public class ApiConfigServiceImpl implements ApiConfigService {
         api.setName((String) map.get("name"));
         api.setMethod((String) map.get("method"));
         api.setUrl((String) map.get("url"));
+        api.setProtocol((String) map.get("protocol"));
         api.setHeaders(List.class.cast(map.get("headers")));
         api.setResponseBody((String) map.get("responseBody"));
         api.setRequestBody((String) map.get("requestBody"));

@@ -16,7 +16,7 @@
 
         <!-- Page Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="fw-bold">Skyvva APIs</h3>
+            <h3 class="fw-bold">Rest APIs Query Account</h3>
             <div class="d-flex gap-2">
                 <button class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createApiModal">
                     <i class="bi bi-plus-lg me-1"></i> Create new API
@@ -48,7 +48,7 @@
                 <tr th:each="api : ${mockApis}">
                     <td>
                         <a th:text="${api.name}"
-                           th:href="@{'/page/create-new-api/redirect'(id=${api.id})}"></a>
+                           th:href="@{'/page/create-new-api/redirect'(id=${api.id},protocol=${api.protocol})}"></a>
                     </td>
                     <td th:text="${api.baseUrl}"></td>
                     <td th:text="${api.createdDate}"></td>

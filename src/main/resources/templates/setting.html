@@ -8,7 +8,7 @@
 <body>
 
 <div class="d-flex">
-    <!-- Sidebar fragment -->
+    <!-- Sidebar -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <main class="flex-fill p-4">
@@ -19,27 +19,105 @@
             <!-- Security Mode -->
             <div class="mb-3">
                 <label class="form-label">Security Mode</label>
-                <select class="form-select" name="securityMode" id="securityMode" th:field="${settingCache.securityMode}">
+                <select class="form-select" id="securityMode" th:field="*{securityMode}">
                     <option value="NONE">None</option>
                     <option value="BASIC">Basic Auth</option>
+                    <option value="OAUTH2">OAuth 2</option>
+<!--                    <option value="JWT">JWT</option>-->
+<!--                    <option value="API_KEY">API Key</option>-->
                 </select>
-
             </div>
 
-            <!-- BASIC AUTH FIELDS -->
-            <div id="basicAuthFields" style="display:none;">
+            <!-- BASIC AUTH -->
+            <div id="basicAuthFields" class="border rounded p-3 mb-3" style="display:none;">
+                <h6 class="fw-bold mb-3"><i class="bi bi-person-lock"></i> Basic Authentication</h6>
+
                 <div class="mb-3">
                     <label class="form-label">Username</label>
-                    <input type="text" class="form-control" name="username" required th:value="${settingCache.username != null ? settingCache.username : ''}">
+                    <input type="text" class="form-control" id="basicUsername" th:field="*{username}">
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Password</label>
-                    <input type="password" class="form-control" name="password" required th:value="${settingCache.password != null ? settingCache.password : ''}">
+                    <input type="password" class="form-control" name="password" th:value="${settingCache.password}">
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary">Save</button>
+            <!-- CLIENT REGISTRATION -->
+            <div id="clientSection" class="border rounded p-3 mb-3" style="display:none;">
+                <h6 class="fw-bold mb-3"><i class="bi bi-key"></i> Register Client</h6>
+
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <label class="form-label">Username (from Basic)</label>
+                        <input type="text" class="form-control" id="clientUsername" readonly>
+                    </div>
+
+                    <div class="col-md-4 mb-2">
+                        <label class="form-label">Token Unit</label>
+                        <select class="form-select" id="tokenUnit">
+                            <option value="SECONDS">Seconds</option>
+                            <option value="MINUTES">Minutes</option>
+                            <option value="HOURS">Hours</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 mb-2">
+                        <label class="form-label">Duration</label>
+                        <input type="number" class="form-control" id="tokenDuration" value="30">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Token URL</label>
+                        <input type="text" class="form-control"
+                               placeholder="https://auth.example.com/oauth/token"
+                               th:value="'http://localhost:' + ${serverPort} + '/oauth2/token'">
+                    </div>
+                </div>
+            </div>
+
+            <!-- CLIENT TABLE -->
+            <div id="clientTableSection" class="border rounded p-3 mb-3" style="display:none;">
+                <h6 class="fw-bold"><i class="bi bi-table"></i> Registered Clients</h6>
+                <table class="table table-sm table-bordered mt-2">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Username</th>
+                        <th>Client ID</th>
+                        <th>Client Secret</th>
+                        <th>Type</th>
+                        <th>Token Unit</th>
+                        <th>Duration</th>
+                    </tr>
+                    </thead>
+                    <tbody id="clientTableBody">
+                    <tr th:if="${settingCache.clientId != null}">
+                        <td th:text="${settingCache.username}"></td>
+                        <td th:text="${settingCache.clientId}"></td>
+                        <td th:text="${settingCache.clientSecret}"></td>
+                        <td th:text="${settingCache.securityMode}"></td>
+                        <td th:text="${settingCache.tokenUnit}"></td>
+                        <td th:text="${settingCache.tokenDuration}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- BUTTONS -->
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" id="saveBtn" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Save
+                </button>
+                <button type="button" id="oauthBtn" class="btn btn-success d-none" onclick="registerClient('OAUTH2')">
+                    <i class="bi bi-shield-lock"></i> Register OAuth2 Client
+                </button>
+                <button type="button" id="jwtBtn" class="btn btn-warning d-none" onclick="registerClient('JWT')">
+                    <i class="bi bi-patch-check"></i> Register JWT Client
+                </button>
+                <button type="button" id="apiKeyBtn" class="btn btn-dark d-none" onclick="registerClient('API_KEY')">
+                    <i class="bi bi-key"></i> Register API Key
+                </button>
+            </div>
         </form>
 
         <!-- Success message -->
@@ -47,22 +125,81 @@
     </main>
 </div>
 
+<!-- SCRIPT -->
 <script>
-    function toggleAuthFields() {
-        const select = document.getElementById("securityMode");
-        const fields = document.getElementById("basicAuthFields");
+    const clientModes = ["OAUTH2", "JWT", "API_KEY"];
 
-        if (select.value === "BASIC") {
-            fields.style.display = "block";
-        } else {
-            fields.style.display = "none";
+    function toggleSecurityMode() {
+        const mode = document.getElementById("securityMode").value;
+        const username = document.getElementById("basicUsername")?.value || "";
+
+        // Show/Hide sections
+        document.getElementById("basicAuthFields").style.display = mode === "BASIC" ? "block" : "none";
+        const clientSectionVisible = clientModes.includes(mode);
+        document.getElementById("clientSection").style.display = clientSectionVisible ? "block" : "none";
+        document.getElementById("clientTableSection").style.display = clientSectionVisible ? "block" : "none";
+
+        // Show/Hide buttons
+        document.getElementById("saveBtn").style.display = (mode === "NONE" || mode === "BASIC") ? "inline-block" : "none";
+        document.getElementById("oauthBtn").classList.toggle("d-none", mode !== "OAUTH2");
+        document.getElementById("jwtBtn").classList.toggle("d-none", mode !== "JWT");
+        document.getElementById("apiKeyBtn").classList.toggle("d-none", mode !== "API_KEY");
+
+        // Set username for token clients
+        if (clientSectionVisible) {
+            if (!username) {
+                alert("Please configure BASIC username first");
+                document.getElementById("securityMode").value = "BASIC";
+                toggleSecurityMode();
+                return;
+            }
+            document.getElementById("clientUsername").value = username;
         }
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
-        toggleAuthFields();
-        document.getElementById("securityMode").addEventListener("change", toggleAuthFields);
+    document.addEventListener("DOMContentLoaded", () => {
+        toggleSecurityMode();
+        document.getElementById("securityMode").addEventListener("change", toggleSecurityMode);
     });
+
+    async function registerClient(type) {
+        const username = document.getElementById("clientUsername").value;
+        const unit = document.getElementById("tokenUnit").value;
+        const duration = document.getElementById("tokenDuration").value;
+
+        if (!username) {
+            alert("Please configure BASIC username first");
+            return;
+        }
+
+        try {
+            const response = await fetch('/page/client/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ type, username, tokenUnit: unit, tokenDuration: duration })
+            });
+
+            const data = await response.json();
+
+            // Update table
+            const tbody = document.getElementById("clientTableBody");
+            tbody.innerHTML = `
+            <tr>
+                <td>${data.username}</td>
+                <td>${data.clientId}</td>
+                <td>${data.clientSecret}</td>
+                <td>${data.securityMode}</td>
+                <td>${data.tokenUnit}</td>
+                <td>${data.tokenDuration}</td>
+            </tr>
+        `;
+
+            alert(`${type} client registered successfully!\nClient Secret: ${data.clientSecret}`);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to register client");
+        }
+    }
 </script>
 
 </body>

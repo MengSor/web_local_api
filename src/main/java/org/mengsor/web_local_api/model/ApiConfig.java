@@ -27,6 +27,7 @@ public class ApiConfig {
     private String requestBody;
     private String responseBody;
 
+    private String protocol;
     private int statusCode;
 
     @Data

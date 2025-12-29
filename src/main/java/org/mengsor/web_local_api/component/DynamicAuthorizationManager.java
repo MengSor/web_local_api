@@ -1,10 +1,13 @@
 package org.mengsor.web_local_api.component;
 
 import org.mengsor.web_local_api.model.SettingCache;
+import org.mengsor.web_local_api.model.enums.SecurityMode;
 import org.mengsor.web_local_api.services.SettingCacheService;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.stereotype.Component;
 
@@ -31,20 +34,48 @@ public class DynamicAuthorizationManager
             RequestAuthorizationContext context) {
 
         SettingCache cache = cacheService.loadDecrypted();
-        String mode = cache.getSecurityMode() != null ? cache.getSecurityMode().toString() : "NONE";
-        // Auth mode NONE → allow everything
-        if (mode.equals("NONE")) {
-            return new AuthorizationDecision(true);
-        }
+        SecurityMode mode = cache.getSecurityMode() != null ? cache.getSecurityMode() : SecurityMode.NONE;
 
-        // Auth mode BASIC → require authenticated user
         Authentication auth = authentication.get();
 
-        boolean authenticated =
-                auth != null &&
-                        auth.isAuthenticated() &&
-                        !"anonymousUser".equals(auth.getPrincipal());
+        boolean allowed;
 
-        return new AuthorizationDecision(authenticated);
+        switch (mode) {
+            case NONE:
+                allowed = true; // public access
+                break;
+
+            case BASIC:
+                allowed = auth != null &&
+                        auth.isAuthenticated() &&
+                        auth instanceof UsernamePasswordAuthenticationToken &&
+                        !"anonymousUser".equals(auth.getPrincipal());
+                break;
+
+            case OAUTH2:
+                allowed = auth != null &&
+                        auth.isAuthenticated() &&
+                        auth instanceof JwtAuthenticationToken; // OAuth2 JWT
+                break;
+
+            case JWT:
+                allowed = auth != null &&
+                        auth.isAuthenticated() &&
+                        auth instanceof JwtAuthenticationToken; // JWT bearer
+                break;
+
+            case API_KEY:
+                // Simple check: role "ROLE_API" must be present
+                allowed = auth != null &&
+                        auth.isAuthenticated() &&
+                        auth.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_API"));
+                break;
+
+            default:
+                allowed = false;
+        }
+
+        return new AuthorizationDecision(allowed);
     }
 }

@@ -2,6 +2,7 @@ package org.mengsor.web_local_api.configuration.until;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 /**
@@ -14,27 +15,54 @@ public class CryptoUtil {
     // EXACTLY 16 chars
     private static final String KEY = "SkyvvaSecretKey!";
 
+    private static final String AES = "AES";
+
     public static String encrypt(String value) {
         try {
-            Cipher cipher = Cipher.getInstance("AES");
+            Cipher cipher = Cipher.getInstance(AES);
             cipher.init(Cipher.ENCRYPT_MODE,
-                    new SecretKeySpec(KEY.getBytes(), "AES"));
+                    new SecretKeySpec(KEY.getBytes(StandardCharsets.UTF_8), AES));
             return Base64.getEncoder()
-                    .encodeToString(cipher.doFinal(value.getBytes()));
+                    .encodeToString(cipher.doFinal(value.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Encryption failed", e);
         }
     }
 
-    public static String decrypt(String encrypted) {
+    /**
+     * Decrypts value.
+     * If value is NOT encrypted, returns it as-is.
+     */
+    public static String decrypt(String value) {
+        if (value == null || value.isBlank()) {
+            return value;
+        }
+
         try {
-            Cipher cipher = Cipher.getInstance("AES");
+            // 1️⃣ Validate Base64 first
+            if (!isBase64(value)) {
+                return value; // plain text
+            }
+
+            Cipher cipher = Cipher.getInstance(AES);
             cipher.init(Cipher.DECRYPT_MODE,
-                    new SecretKeySpec(KEY.getBytes(), "AES"));
-            return new String(cipher.doFinal(
-                    Base64.getDecoder().decode(encrypted)));
+                    new SecretKeySpec(KEY.getBytes(StandardCharsets.UTF_8), AES));
+
+            byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(value));
+            return new String(decrypted, StandardCharsets.UTF_8);
+
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            // 2️⃣ Any crypto error → treat as plain text
+            return value;
+        }
+    }
+
+    private static boolean isBase64(String value) {
+        try {
+            Base64.getDecoder().decode(value);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
         }
     }
 }

@@ -14,7 +14,19 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,7 +50,7 @@ public class DynamicApiServiceImpl implements DynamicApiService {
     public ApiResponse handleRequest(HttpServletRequest request, String requestBody) {
 
         log.info("Received request: {} {}", request.getMethod(), request.getRequestURI());
-        String apiPath = request.getRequestURI().replaceFirst(".*/skyvva.api/", "");
+        String apiPath = request.getRequestURI().replaceFirst(".*/query.api/", "");
         String method = request.getMethod();
 
         // Get query parameters
@@ -71,21 +83,29 @@ public class DynamicApiServiceImpl implements DynamicApiService {
                     null, HttpStatus.NOT_FOUND.value());
         }
 
-        List<ApiConfig.keyValuePair> queryList = convertToKeyValuePairList(config.getQueries());
-        List<ApiConfig.keyValuePair> cookieList  = convertToKeyValuePairList(config.getCookies());
+        boolean isSoap = "SOAP".equalsIgnoreCase(config.getProtocol());
 
+//        List<ApiConfig.keyValuePair> queryList = convertToKeyValuePairList(config.getQueries());
+//        List<ApiConfig.keyValuePair> cookieList  = convertToKeyValuePairList(config.getCookies());
+
+//        // --- Validate query parameters ---
+//        List<String> missingQueries = new ArrayList<>();
+//        Map<String, String> requiredQueries = toMap(queryList);
+//        for (Map.Entry<String, String> entry : requiredQueries.entrySet()) {
+//            String key = entry.getKey();
+//            String expected = entry.getValue();
+//            String[] actual = queryParams.get(key);
+//
+//            if (actual == null || !expected.equals(actual[0])) {
+//                missingQueries.add(key);
+//            }
+//        }
         // --- Validate query parameters ---
-        List<String> missingQueries = new ArrayList<>();
+        List<ApiConfig.keyValuePair> queryList = convertToKeyValuePairList(config.getQueries());
         Map<String, String> requiredQueries = toMap(queryList);
-        for (Map.Entry<String, String> entry : requiredQueries.entrySet()) {
-            String key = entry.getKey();
-            String expected = entry.getValue();
-            String[] actual = queryParams.get(key);
-
-            if (actual == null || !expected.equals(actual[0])) {
-                missingQueries.add(key);
-            }
-        }
+        List<String> missingQueries = requiredQueries.entrySet().stream()
+                .filter(e -> queryParams.get(e.getKey()) == null || !e.getValue().equals(queryParams.get(e.getKey())[0]))
+                .map(Map.Entry::getKey).toList();
         if (!missingQueries.isEmpty()) {
             String msg = "Missing or invalid query parameters: " + String.join(", ", missingQueries);
             requestLogService.logUnmatched(request, requestBody, config, "Missing/Invalid query parameters",
@@ -94,18 +114,24 @@ public class DynamicApiServiceImpl implements DynamicApiService {
             return new ApiResponse(false, msg, null, HttpStatus.BAD_REQUEST.value());
         }
 
-
+//        // Validate Cookies
+//        Map<String, String> requiredCookies = toMap(cookieList);
+//        List<String> missingCookies = new ArrayList<>();
+//        for (Map.Entry<String, String> entry : requiredCookies.entrySet()) {
+//            String key = entry.getKey();
+//            String expectedValue = entry.getValue();
+//            String actualValue = cookies.get(key);
+//
+//            if (actualValue == null || (expectedValue != null && !expectedValue.equals(actualValue))) {
+//                missingCookies.add(key);
+//            }
+//        }
+        // --- Validate cookies ---
+        List<ApiConfig.keyValuePair> cookieList = convertToKeyValuePairList(config.getCookies());
         Map<String, String> requiredCookies = toMap(cookieList);
-        List<String> missingCookies = new ArrayList<>();
-        for (Map.Entry<String, String> entry : requiredCookies.entrySet()) {
-            String key = entry.getKey();
-            String expectedValue = entry.getValue();
-            String actualValue = cookies.get(key);
-
-            if (actualValue == null || (expectedValue != null && !expectedValue.equals(actualValue))) {
-                missingCookies.add(key);
-            }
-        }
+        List<String> missingCookies = requiredCookies.entrySet().stream()
+                .filter(e -> !e.getValue().equals(cookies.get(e.getKey())))
+                .map(Map.Entry::getKey).toList();
 
         if (!missingCookies.isEmpty()) {
             String msg = "Missing or invalid cookies: " + String.join(", ", missingCookies);
@@ -116,7 +142,7 @@ public class DynamicApiServiceImpl implements DynamicApiService {
         }
 
 
-        // Validate format
+        // Validate Request Body
         if (!validateFormatSafe(requestBody, config.getRequestBody())) {
             requestLogService.logUnmatched(
                     request,
@@ -131,6 +157,23 @@ public class DynamicApiServiceImpl implements DynamicApiService {
                     HttpStatus.BAD_REQUEST.value());
         }
 
+        Map<String, String> soapHeaders = new HashMap<>();
+        String extractedBody = requestBody;
+
+        // --- SOAP Validation ---
+        if (isSoap) {
+            try {
+                SoapValidationResult result = validateSoapRequestWithHeaders(request, requestBody);
+                extractedBody = result.getExtractedBody();
+                soapHeaders = result.getHeaders();
+            } catch (Exception ex) {
+                String fault = buildSoapFault(ex.getMessage());
+                requestLogService.logUnmatched(request, requestBody, config, "SOAP validation failed",
+                        ex.getMessage(), 500);
+                return new ApiResponse(false, ex.getMessage(), fault, 500);
+            }
+        }
+
         // Validate content
         List<String> headerDiffs = new ArrayList<>();
 
@@ -139,12 +182,8 @@ public class DynamicApiServiceImpl implements DynamicApiService {
         }
         if ((hasTemplate(config.getRequestBody()) && !reporter.bodyEquals(config.getRequestBody(), requestBody))
              || (config.getHeaders()!=null && headerDiffs.size() >0 && !headerDiffs.isEmpty())) {
-            String diffReport = reporter.buildNonMatchReport(
-                    request,
-                    config,
-                    requestBody,
-                    headerDiffs
-            );
+
+            String diffReport = reporter.buildNonMatchReport(request, config, requestBody, headerDiffs);
 
             requestLogService.logUnmatched(
                     request,
@@ -163,17 +202,24 @@ public class DynamicApiServiceImpl implements DynamicApiService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(detectMediaType(config.getResponseBody()));
 
+        String responseBody = config.getResponseBody();
+
+        if (isSoap && responseBody != null && !responseBody.contains("Envelope")) {
+            responseBody = wrapSoapResponse(responseBody, soapHeaders);
+        }
+
+        String body = isSoap ? responseBody : config.getResponseBody();
         // Log success
         requestLogService.logMatched(
                 request,
                 requestBody,
                 config,
-                config.getResponseBody(),
+                 body,
                 config.getStatusCode()
         );
 
         log.info("Received request successfully");
-        return new ApiResponse(true, "Success", config.getResponseBody(), config.getStatusCode());
+        return new ApiResponse(true, "Success", body, config.getStatusCode());
     }
 
     // --- Helper methods ---
@@ -218,5 +264,122 @@ public class DynamicApiServiceImpl implements DynamicApiService {
                 .collect(Collectors.toList());
     }
 
+    // --- SOAP validation with WS-Security ---
+    private SoapValidationResult validateSoapRequestWithHeaders(HttpServletRequest request, String body) throws Exception {
+        if (body == null || body.isBlank()) throw new RuntimeException("SOAP body is empty");
 
+        // SOAPAction
+        String soapAction = request.getHeader("SOAPAction");
+        if (soapAction == null || soapAction.isBlank()) throw new RuntimeException("Missing SOAPAction header");
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+        Document doc = factory.newDocumentBuilder().parse(new InputSource(new StringReader(body)));
+
+        Map<String, String> headersMap = new HashMap<>();
+
+        // --- Extract headers ---
+        NodeList headerNodes = doc.getElementsByTagNameNS("*", "Header");
+        if (headerNodes.getLength() > 0) {
+            NodeList children = headerNodes.item(0).getChildNodes();
+            for (int i = 0; i < children.getLength(); i++) {
+                Node child = children.item(i);
+                if (child.getNodeType() == Node.ELEMENT_NODE) {
+                    headersMap.put(child.getLocalName(), child.getTextContent().trim());
+
+                    // --- WS-Security validation ---
+                    if ("Security".equals(child.getLocalName())) {
+                        validateWSSecurity(child);
+                    }
+                }
+            }
+        }
+
+        // --- Extract body payload ---
+        NodeList bodyNodes = doc.getElementsByTagNameNS("*", "Body");
+        if (bodyNodes.getLength() == 0) throw new RuntimeException("SOAP Body not found");
+        Node bodyNode = bodyNodes.item(0).getFirstChild();
+        if (bodyNode == null) throw new RuntimeException("SOAP Body is empty");
+
+        StringWriter sw = new StringWriter();
+        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+        transformer.transform(new DOMSource(bodyNode), new StreamResult(sw));
+
+        return SoapValidationResult.valid(sw.toString(), headersMap);
+    }
+
+    // --- WS-Security validation ---
+    private void validateWSSecurity(Node securityNode) {
+        NodeList children = securityNode.getChildNodes();
+        String username = null;
+        String password = null;
+
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if ("UsernameToken".equals(child.getLocalName())) {
+                NodeList tokenChildren = child.getChildNodes();
+                for (int j = 0; j < tokenChildren.getLength(); j++) {
+                    Node tokenChild = tokenChildren.item(j);
+                    if ("Username".equals(tokenChild.getLocalName())) {
+                        username = tokenChild.getTextContent().trim();
+                    } else if ("Password".equals(tokenChild.getLocalName())) {
+                        password = tokenChild.getTextContent().trim();
+                    }
+                }
+            }
+        }
+
+        if (username == null || password == null) {
+            throw new RuntimeException("Missing WS-Security Username or Password");
+        }
+
+        // --- Mock credentials (replace with DB/config if needed) ---
+        if (!"admin".equals(username) || !"admin123".equals(password)) {
+            throw new RuntimeException("Invalid WS-Security credentials");
+        }
+    }
+
+    // --- SOAP response wrapper ---
+    private String wrapSoapResponse(String body, Map<String, String> headers) {
+        StringBuilder headerXml = new StringBuilder();
+        if (headers != null && !headers.isEmpty()) {
+            headers.forEach((k, v) -> headerXml.append("<").append(k).append(">")
+                    .append(v)
+                    .append("</").append(k).append(">"));
+        }
+        return """
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+            <soapenv:Header>
+                %s
+            </soapenv:Header>
+            <soapenv:Body>
+                %s
+            </soapenv:Body>
+        </soapenv:Envelope>
+        """.formatted(headerXml, body);
+    }
+
+    // --- SOAP Fault ---
+    private String buildSoapFault(String message) {
+        return """
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+            <soapenv:Body>
+                <soapenv:Fault>
+                    <faultcode>soap:Client</faultcode>
+                    <faultstring>%s</faultstring>
+                </soapenv:Fault>
+            </soapenv:Body>
+        </soapenv:Envelope>
+        """.formatted(message);
+    }
+
+    // --- SOAP Validation Result ---
+    private record SoapValidationResult(String extractedBody, Map<String, String> headers) {
+        static SoapValidationResult valid(String extractedBody, Map<String, String> headers) {
+            return new SoapValidationResult(extractedBody, headers);
+        }
+        String getExtractedBody() { return extractedBody; }
+        Map<String, String> getHeaders() { return headers; }
+    }
 }

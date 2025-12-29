@@ -2,10 +2,14 @@ package org.mengsor.web_local_api.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.mengsor.web_local_api.configuration.until.CryptoUtil;
 import org.mengsor.web_local_api.model.ApiConfig;
 import org.mengsor.web_local_api.model.CreateNewApi;
 import org.mengsor.web_local_api.model.RequestLog;
 import org.mengsor.web_local_api.model.SettingCache;
+import org.mengsor.web_local_api.model.enums.SecurityMode;
+import org.mengsor.web_local_api.model.enums.TokenUnit;
+import org.mengsor.web_local_api.security.oauth.util.OAuthClientUtil;
 import org.mengsor.web_local_api.services.ApiConfigService;
 import org.mengsor.web_local_api.services.CreateNewApiService;
 import org.mengsor.web_local_api.services.RequestLogService;
@@ -16,6 +20,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Controller
@@ -77,9 +82,9 @@ public class WebController {
      * REDIRECT TO API CONFIG PAGE WHEN CLICK NAME
      */
     @GetMapping("/create-new-api/redirect")
-    public String redirectToApiConfig(@RequestParam Long id) {
+    public String redirectToApiConfig(@RequestParam Long id, @RequestParam String protocol) {
         // Optionally, you could load the API config here and pass as parameter
-        return "redirect:/page/api-config?name=" + "&id=" + id;
+        return "redirect:/page/api-config?id=" + id + "&protocol=" + protocol;
     }
 
     /**
@@ -94,11 +99,10 @@ public class WebController {
 
     /* UI PAGE */
     @GetMapping("/api-config")
-    public String getPage(@RequestParam(required = false) Long id, Model model) {
+    public String getPage(@RequestParam(required = false) Long id,@RequestParam(required = false) String protocol, Model model) {
         ApiConfig config = apiConfigService.findById(id);
-        if (id != null){
-            config.setId(id);
-        }
+        if (id != null) config.setId(id);
+        if (protocol != null) config.setProtocol(protocol);
         model.addAttribute("config", config);
         model.addAttribute("serverPort", serverPort);
         model.addAttribute("activePage", "api-config");
@@ -108,7 +112,7 @@ public class WebController {
 
     /* SAVE FROM UI */
     @PostMapping("/api-config/save")
-    public String save(@ModelAttribute ApiConfig config,@RequestParam Long id, Model model) {
+    public String save(@ModelAttribute ApiConfig config,@RequestParam Long id,@RequestParam String protocol, Model model) {
         try {
             apiConfigService.save(config);
 
@@ -185,6 +189,7 @@ public class WebController {
         model.addAttribute("password",
                 cache.getPassword() == null || cache.getPassword().isEmpty() ? "" : "********");
         model.addAttribute("settingCache", cache);
+        model.addAttribute("serverPort", serverPort);
 
         return "setting";
     }
@@ -195,15 +200,47 @@ public class WebController {
         if ("NONE".equals(form.getSecurityMode().toString())) {
             form.setUsername("");
             form.setPassword("");
+            form.setTokenDuration(0);
+            form.setClientId("");
+            form.setClientSecret("");
+        }
+        if (form.getPassword() != null && !form.getPassword().isEmpty()) {
+            form.setPassword(CryptoUtil.decrypt(form.getPassword()));
         }
         settingCacheService.save(form);
 
         // Return values back to the page
         model.addAttribute("settingCache", form);
+        model.addAttribute("serverPort", serverPort);
         model.addAttribute("username", form.getUsername());
         model.addAttribute("password", form.getPassword());
         model.addAttribute("message", "Saved successfully");
 
         return "setting";
+    }
+
+    @PostMapping("/client/register")
+    @ResponseBody
+    public SettingCache registerClient(@RequestParam String type,
+                                       @RequestParam String username,
+                                       @RequestParam String tokenUnit,
+                                       @RequestParam Integer tokenDuration) {
+        // Generate client_id / client_secret
+        String clientId = OAuthClientUtil.generateClientId();
+        String clientSecret = OAuthClientUtil.generateClientSecret();
+
+        SettingCache cache = settingCacheService.load();
+        cache.setUsername(username); // keep username from Basic
+        cache.setClientId(clientId);
+        cache.setPassword(CryptoUtil.decrypt(cache.getPassword()));
+        cache.setClientSecret(clientSecret);
+        cache.setTokenUnit(TokenUnit.valueOf(tokenUnit));
+        cache.setTokenDuration(tokenDuration);
+        cache.setSecurityMode(SecurityMode.valueOf(type));
+
+        // Save back
+        settingCacheService.save(cache);
+
+        return cache; // return updated cache
     }
 }

@@ -234,7 +234,7 @@ public class RequestMismatchReporter {
         sb.append("[equalToJson]\n");
 
         List<String> expected = normalizeJsonLines(expectedJson);
-        List<String> actual = normalizeJsonLines(actualJson);
+        List<String> actual = normalizeJsonLines(actualJson == null ? "" : actualJson);
 
         int max = Math.max(expected.size(), actual.size());
         int index = 1;

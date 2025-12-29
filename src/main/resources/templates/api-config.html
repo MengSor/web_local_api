@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>API Skyvva Configuration</title>
+    <title>Rest API Query Account Configuration</title>
 
     <!-- Bootstrap & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- CodeMirror -->
@@ -13,6 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/xml/xml.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/htmlmixed/htmlmixed.min.js"></script>
 
     <!-- js-beautify -->
@@ -74,12 +76,12 @@
             resize: vertical;
         }
 
-        .scroll-textarea {
-            overflow-y: auto;
-            resize: vertical;
-            white-space: pre;
-            max-height: 300px;
-        }
+        /*.scroll-textarea {*/
+        /*    overflow-y: auto;*/
+        /*    resize: vertical;*/
+        /*    white-space: pre;*/
+        /*    max-height: 300px;*/
+        /*}*/
         .param-editor {
             border: 1px dashed #444;
             border-radius: 6px;
@@ -142,9 +144,9 @@
 
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4 flex-shrink-0">
-            <h2 class="mb-0">API Skyvva Configuration</h2>
+            <h2 class="mb-0">Rest API Query Account Configuration</h2>
             <span class="badge bg-dark fs-6">
-                Domain: <strong>localhost:<span th:text="${serverPort}"></span>/skyvva.api</strong>
+                Domain: <strong>http://localhost:<span th:text="${serverPort}"></span>/query.api</strong>
             </span>
         </div>
 
@@ -152,17 +154,21 @@
         <div class="flex-fill overflow-auto">
 
             <!-- API Config Form -->
-            <form th:action="@{'/page/api-config/save'(id=${config.id})}" th:object="${config}" method="post" class="card shadow-sm p-4 mb-4">
+            <form th:action="@{'/page/api-config/save'(id=${config.id},protocol=${config.protocol})}" th:object="${config}" method="post" class="card shadow-sm p-4 mb-4">
 
                 <!-- Basic Info Section -->
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">API Name</label>
                         <input type="text" id="apiName" th:field="*{name}" class="form-control" placeholder="user-profile" onkeyup="generateUrl()" required>
                     </div>
+                    <div class="col-md-1">
+                        <label class="form-label">Protocol</label>
+                        <input type="text" id="protocol" th:field="*{protocol}" class="form-control" placeholder="user-profile" disabled="true">
+                    </div>
                     <div class="col-md-2">
                         <label class="form-label">Method</label>
-                        <select class="form-select" th:field="*{method}" onchange="generateSwagger()">
+                        <select class="form-select" th:field="*{method}">
                             <option value="GET">GET</option>
                             <option value="POST">POST</option>
                             <option value="PUT">PUT</option>
@@ -179,7 +185,7 @@
                     <div class="col-md-4">
                         <label class="form-label">Generated URL</label>
                         <div class="input-group">
-                            <span class="input-group-text">http://localhost:<span th:text="${serverPort}"></span>/skyvva.api/</span>
+                            <span class="input-group-text">http://localhost:<span th:text="${serverPort}"></span>/query.api/</span>
                             <input type="text" id="apiUrl" th:field="*{url}" class="form-control" readonly>
                             <button type="button" class="btn btn-outline-secondary" onclick="copyUrl()">
                                 <i class="bi bi-clipboard"></i>
@@ -267,23 +273,31 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Request Body</label>
-                    <textarea id="requestBody" th:field="*{requestBody}" class="form-control" rows="6" ></textarea>
-                    <div class="mt-2 d-flex align-items-center gap-2 beautify-box">
-                        <select id="requestFormat"
-                                th:field="*{requestFormat}"
-                                class="form-select form-select-sm" style="width:120px;">
-                            <option value="json">JSON</option>
-                            <option value="xml">XML</option>
-                        </select>
+                    <label class="form-label d-flex align-items-center justify-content-between" style="cursor:pointer;" onclick="toggleRequestBody()">
+                        Request Body
+                        <i id="requestToggleIcon" class="bi-chevron-down"></i>
+                    </label>
 
-                        <button type="button"
-                                class="btn btn-sm btn-primary"
-                                onclick="beautifyRequest()">
-                            <i class="bi bi-magic"></i> Beautify
-                        </button>
+                    <div id="requestBodySection" style="display:block;">
+                      <textarea id="requestBody" th:field="*{requestBody}" class="form-control"
+                      rows="6" oninput="autoResize(this)"></textarea>
+                        <div class="mt-2 d-flex align-items-center gap-2 beautify-box">
+                            <select id="requestFormat"
+                                    th:field="*{requestFormat}"
+                                    class="form-select form-select-sm" style="width:120px;">
+                                <option value="json">JSON</option>
+                                <option value="xml">XML</option>
+                            </select>
+
+                            <button type="button"
+                                    class="btn btn-sm btn-primary"
+                                    onclick="beautifyRequest()">
+                                <i class="bi bi-magic"></i> Beautify
+                            </button>
+                        </div>
                     </div>
                 </div>
+
 
                 <hr style="margin:20px 0;">
 
@@ -327,38 +341,123 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Response Body</label>
+                    <label class="form-label d-flex align-items-center justify-content-between" style="cursor:pointer;" onclick="toggleResponseBody()">
+                        Response Body
+                        <i id="responseToggleIcon" class="bi bi-chevron-down"></i>
+                    </label>
 
-                    <textarea id="responseBody"
-                              th:field="*{responseBody}"
-                              class="form-control"
-                              rows="6"></textarea>
+                    <div id="responseBodySection" style="display:block;">
+                        <textarea id="responseBody"
+                                  th:field="*{responseBody}"
+                                  class="form-control"
+                                  rows="6"></textarea>
 
-                    <div class="mt-2 d-flex align-items-center gap-2 beautify-box">
-                        <select id="responseFormat"
-                                th:field="*{responseFormat}"
-                                class="form-select form-select-sm" style="width:120px;">
-                            <option value="json">JSON</option>
-                            <option value="xml">XML</option>
-                        </select>
+                        <div class="mt-2 d-flex align-items-center gap-2 beautify-box">
+                            <select id="responseFormat"
+                                    th:field="*{responseFormat}"
+                                    class="form-select form-select-sm" style="width:120px;">
+                                <option value="json">JSON</option>
+                                <option value="xml">XML</option>
+                            </select>
 
-                        <button type="button"
-                                class="btn btn-sm btn-primary"
-                                onclick="beautifyResponse()">
-                            <i class="bi bi-magic"></i> Beautify
-                        </button>
+                            <button type="button"
+                                    class="btn btn-sm btn-primary"
+                                    onclick="beautifyResponse()">
+                                <i class="bi bi-magic"></i> Beautify
+                            </button>
+                        </div>
                     </div>
                 </div>
-
-
 
                 <!-- Actions -->
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save API</button>
                     <button type="button" class="btn btn-success" onclick="mockTest()"><i class="bi bi-play-circle"></i> Test API</button>
+                    <button type="button" class="btn btn-primary" onclick="addApi()">Generate Meta Data</button>
                 </div>
 
             </form>
+
+            <h5 class="mb-3">API Resources</h5>
+
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-3" id="apiResourceTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active"
+                   id="spec-tab"
+                   data-bs-toggle="tab"
+                   href="#apiSpec"
+                   role="tab"
+                   onclick="openApiSpecTab()">
+                    API Specification
+                </a>
+            </li>
+
+            <li class="nav-item" role="presentation">
+                <a class="nav-link"
+                   id="auth-tab"
+                   data-bs-toggle="tab"
+                   href="#authMethods"
+                   role="tab"
+                   onclick="openApiSpecTab()">
+                    Authentication Methods
+                </a>
+            </li>
+        </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+
+                <!-- ================= API SPEC TAB ================= -->
+                <div class="tab-pane fade show active" id="apiSpec" role="tabpanel">
+
+                                    <!-- OpenAPI Resource Table -->
+                    <div class="card mt-3 shadow-sm mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="bi bi-table"></i> API Resource Table
+                        </span>
+                            <button class="btn btn-sm btn-success" onclick="downloadOpenApi()">
+                                <i class="bi bi-download"></i> Download Full OpenAPI JSON
+                            </button>
+                        </div>
+
+                        <div class="card-body table-responsive">
+                            <table class="table table-striped table-hover mb-0" id="apiResourceTable">
+                                <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Path</th>
+                                    <th>Type</th>
+                                    <th>Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <!-- Rows dynamically inserted -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Hidden OpenAPI preview for download -->
+                    <pre id="openApiPreview" class="d-none"></pre>
+                </div>
+
+                <!-- ================= AUTH METHODS TAB ================= -->
+                <div class="tab-pane fade" id="authMethods" role="tabpanel">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h6>Authentication Method Support:</h6>
+                            <ul>
+                                <li><a href="/page/setting">Basic</a></li>
+                                <li><a href="/page/setting">OAuth 2.0</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
 
             <!-- Skyvva Result -->
             <div class="card mt-4 shadow-sm mb-4">
@@ -437,26 +536,32 @@
         const name = document.getElementById("apiName").value.toLowerCase().trim().replace(/\s+/g, "-");
         const version = document.getElementById("apiVersion").value;
         document.getElementById("apiUrl").value = name ? `${version}/${name}` : "";
-        generateSwagger();
+        // generateSwagger();
     }
 
     function copyUrl() {
-        const fullUrl = `http://localhost:${SERVER_PORT}/skyvva.api/${document.getElementById("apiUrl").value}`;
+        const fullUrl = `http://localhost:${SERVER_PORT}/query.api/${document.getElementById("apiUrl").value}`;
         navigator.clipboard.writeText(fullUrl);
         alert("Copied: " + fullUrl);
     }
 
-    function generateSwagger() {
-        const method = document.querySelector("[name='method']").value;
-        const url = "/" + document.getElementById("apiUrl").value;
-        const swagger = {
-            openapi: "3.0.0",
-            info: { title: "Skyvva API", version: "1.0.0" },
-            servers: [{ url:`http://localhost:${SERVER_PORT}/skyvva.api`  }],
-            paths: { [url]: { [method.toLowerCase()]: { responses: { "200": { description: "Skyvva response" } } } } }
-        };
-        document.getElementById("swaggerPreview").textContent = JSON.stringify(swagger, null, 2);
-    }
+    // function generateSwagger() {
+    //     const method = document.querySelector("[name='method']").value;
+    //     const url = "/" + document.getElementById("apiUrl").value;
+    //     const swagger = {
+    //         openapi: "3.0.0",
+    //         info: { title: "Rest API Query Account", version: "1.0.0" },
+    //         servers: [{ url:`http://localhost:${SERVER_PORT}/query.api`  }],
+    //         paths: { [url]: { [method.toLowerCase()]: { responses: { "200": { description: "response" } } } } }
+    //     };
+    //     document.getElementById("swaggerPreview").textContent = JSON.stringify(swagger, null, 2);
+    // }
+
+    // Generate Swagger Preview
+    // function generateSwagger(){
+    //     document.getElementById("swaggerPreview").textContent = JSON.stringify(generateOpenApi(), null, 2);
+    //     addApi();
+    // }
 
     /* Mock Test Result */
     function mockTest() {
@@ -588,6 +693,535 @@
         document.querySelectorAll('.toast').forEach(t => t.remove());
     }, 3500);
 
+    function autoResize(textarea) {
+        textarea.style.height = 'auto'; // reset height
+        textarea.style.height = textarea.scrollHeight + 'px'; // set height to content
+    }
+
+    // Optional: auto-resize on page load if textarea has pre-filled content
+    window.addEventListener('DOMContentLoaded', () => {
+        const textarea = document.getElementById('requestBody');
+        autoResize(textarea);
+    });
+
+    // ---------- API List ----------
+    let apiList = [];
+
+
+    /* ----- ADD API ----- */
+    function addApi() {
+        const name = document.getElementById("apiName").value.trim();
+        const url = document.getElementById("apiUrl").value.trim();
+        const method = document.querySelector("[name='method']").value;
+        const status = document.getElementById("statusCode").value;
+        const requestBody = requestEditor.getValue();
+        const responseBody = responseEditor.getValue();
+        const protocol = document.getElementById("protocol").value;
+
+        if (!name || !url) { alert("API Name and URL are required"); return; }
+
+        apiList.push({ name, url, method, status, requestBody, responseBody, protocol });
+       if (protocol === 'SOAP'){
+           renderWsdlApiTable();
+           generateWsdl();
+       }else {
+           renderApiTable();
+           generateOpenApi();
+       }
+
+        // Reset optional: clear form
+        // document.getElementById("apiForm").reset();
+    }
+
+    /* ----- RENDER API TABLE ----- */
+    function renderApiTable() {
+        const tbody = document.querySelector("#apiResourceTable tbody");
+        tbody.innerHTML = "";
+
+        apiList.forEach((api, idx) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+            <td>${idx + 1}</td>
+            <td>${'OpenAPI 3.0.0'}</td>
+            <td>/${api.url}</td>
+            <td>json</td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="removeApi(${idx})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderWsdlApiTable() {
+        const tbody = document.querySelector("#apiResourceTable tbody");
+        tbody.innerHTML = "";
+
+        apiList.forEach((api, idx) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+            <td>${idx + 1}</td>
+            <td>${'Wsdl 1.1'}</td>
+            <td>/${api.url}</td>
+            <td>wsdl</td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="removeApi(${idx})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    /* ----- REMOVE API ----- */
+    function removeApi(idx) {
+        apiList.splice(idx, 1);
+        renderApiTable();
+        generateOpenApi();
+    }
+
+    /* ----- GENERATE OPENAPI JSON ----- */
+    function generateOpenApi() {
+        const paths = {};
+
+        apiList.forEach(api => {
+            const isReqXml = isXml(api.requestBody);
+            const isResXml = isXml(api.responseBody);
+
+            const reqSchema = api.requestBody
+                ? (isReqXml ? buildXmlSchema(api.requestBody)
+                    : parseJsonSchema(api.requestBody))
+                : null;
+
+            const resSchema = api.responseBody
+                ? (isResXml ? buildXmlSchema(api.responseBody)
+                    : parseJsonSchema(api.responseBody))
+                : null;
+
+            paths["/" + api.url] = {
+                [api.method.toLowerCase()]: {
+                    requestBody: reqSchema ? {
+                        required: true,
+                        content: {
+                            [isReqXml ? "application/xml" : "application/json"]: {
+                                schema: reqSchema
+                            }
+                        }
+                    } : undefined,
+                    responses: {
+                        [api.status]: {
+                            description: "Response",
+                            content: resSchema ? {
+                                [isResXml ? "application/xml" : "application/json"]: {
+                                    schema: resSchema
+                                }
+                            } : undefined
+                        }
+                    }
+                }
+            };
+        });
+
+        const openApi = {
+            openapi: "3.0.0",
+            info: {
+                title: "Dynamic API Suite",
+                version: "1.0.0"
+            },
+            servers: [{ url: 'http://localhost:' + SERVER_PORT + '/query.api/' }],
+            paths,
+            components: { schemas: {} }
+        };
+
+        document.getElementById("openApiPreview").textContent =
+            JSON.stringify(openApi, null, 2);
+        document.getElementById("swaggerPreview").textContent = JSON.stringify(openApi, null, 2);
+
+        return openApi;
+    }
+
+
+    /* ----- JSON STRING TO OPENAPI SCHEMA ----- */
+    function parseJsonSchema(jsonStr) {
+        if (!jsonStr) return null;
+        try {
+            const obj = JSON.parse(jsonStr);
+            return buildSchema(obj);
+        } catch(e) {
+            console.warn("Invalid JSON:", e.message);
+            return null;
+        }
+    }
+
+    function buildSchema(obj) {
+        if (Array.isArray(obj)) return { type: "array", items: buildSchema(obj[0] || {}) };
+        else if (obj && typeof obj === "object") {
+            const props = {};
+            for (const key in obj) {
+                const val = obj[key];
+                if (val === null) props[key] = { type: "string", nullable: true };
+                else if (Array.isArray(val)) props[key] = buildSchema(val);
+                else if (typeof val === "object") props[key] = buildSchema(val);
+                else if (typeof val === "number") props[key] = { type: "number", example: val };
+                else if (typeof val === "boolean") props[key] = { type: "boolean", example: val };
+                else props[key] = { type: "string", example: val };
+            }
+            return { type: "object", properties: props };
+        } else if (typeof obj === "number") return { type: "number", example: obj };
+        else if (typeof obj === "boolean") return { type: "boolean", example: obj };
+        else return { type: "string", example: obj };
+    }
+
+    /* ----- DOWNLOAD OPENAPI JSON ----- */
+    function downloadOpenApi() {
+        const pro = document.getElementById("protocol").value;
+        const data = document.getElementById("openApiPreview").textContent;
+        const blob = new Blob([data], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const apiName = document.getElementById("apiName").value;
+        a.href = url;
+        if (pro === 'SOAP') {
+            a.download = `${apiName}.wsdl`;
+        } else {
+            a.download = `${apiName}.json`;
+        }
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function loadApiTable() {
+        const tbody = document.querySelector('#apiResourceTable tbody');
+        tbody.innerHTML = '';
+        const rowId = `api-row-${index}`;
+
+        apiData.forEach((api, index) => {
+            tbody.innerHTML += `
+                <tr id="${rowId}">>
+                    <td>${index + 1}</td>
+                    <td>
+                        <span class="badge bg-primary">${api.method}</span>
+                    </td>
+                    <td>${api.path}</td>
+                    <td>${api.type}</td>
+                    <td>
+                        <span class="badge ${api.status === 'ACTIVE' ? 'bg-success' : 'bg-secondary'}">
+                            ${api.status}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1"
+                                onclick="viewSpec('${rowId}','${api.method}', '${api.path}')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+
+                        <button class="btn btn-sm btn-outline-secondary"
+                                onclick="viewAuth('${rowId}','${api.method}', '${api.path}')">
+                            <i class="bi bi-shield-lock"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function openTab(tabId) {
+        const tabTrigger = document.querySelector(
+            `a[data-bs-toggle="tab"][href="#${tabId}"]`
+        );
+        if (tabTrigger) {
+            new bootstrap.Tab(tabTrigger).show();
+        }
+    }
+
+    function viewSpec(rowId,method, path) {
+        setActiveRow(rowId);
+        document.getElementById('selectedApi').innerText = `${method} ${path}`;
+        openTab('apiSpec');
+    }
+
+    function viewAuth(rowId,method, path) {
+        setActiveRow(rowId);
+        document.getElementById('selectedApi').innerText = `${method} ${path}`;
+        openTab('authMethods');
+    }
+
+    /* ================= ACTIVE ROW ================= */
+    function setActiveRow(rowId) {
+        document.querySelectorAll('#apiTableBody tr')
+            .forEach(tr => tr.classList.remove('api-row-active'));
+
+        const row = document.getElementById(rowId);
+        if (row) row.classList.add('api-row-active');
+    }
+
+    function isXml(content) {
+        return content && content.trim().startsWith("<");
+    }
+
+    /* ===========================
+        XML → OPENAPI SCHEMA
+    =========================== */
+    function buildXmlSchema(xmlString) {
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(xmlString, "application/xml");
+        const root = xml.documentElement;
+
+        const wrapper = {};
+        wrapper[root.tagName] = xmlToObject(root);
+
+        return buildSchema(wrapper); // reuse JSON schema builder
+    }
+
+    function xmlToObject(node) {
+        const obj = {};
+
+        Array.from(node.children).forEach(child => {
+            if (child.children.length > 0) {
+                obj[child.tagName] = xmlToObject(child);
+            } else {
+                obj[child.tagName] = "";
+            }
+        });
+
+        return obj;
+    }
+
+    /* =====================================================
+   WSDL 1.1 GENERATION (SOAP)
+===================================================== */
+    function generateWsdl() {
+
+        const api = apiList.find(a => a.protocol === "SOAP");
+        if (!api) return;
+
+        const op = api.name.replace(/\s+/g, "");
+
+        const req = extractSoapParts(api.requestBody);
+        const res = extractSoapParts(api.responseBody);
+
+        if (!req.body || !res.body) {
+            alert("SOAP API requires both Request and Response Body");
+            return;
+        }
+
+        const wsdl = `<?xml version="1.0" encoding="UTF-8"?>
+        <wsdl:definitions
+            xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+            xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:tns="http://example.com/wsdl"
+                                      targetNamespace="http://example.com/wsdl">
+            <wsdl:types>
+                <xsd:schema targetNamespace="http://example.com/wsdl" elementFormDefault="qualified">
+                    <!-- REQUEST HEADERS -->
+                        ${req.headers.map(h => `
+
+                    <xsd:element name="${stripNs(h.tagName)}">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                              ${xmlToXsd(h)}
+                            </xsd:sequence>
+                        </xsd:complexType>
+                    </xsd:element>`).join("")}
+
+
+                    <!-- RESPONSE HEADERS -->
+                        ${res.headers.map(h => `
+
+                    <xsd:element name="${stripNs(h.tagName)}">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                              ${xmlToXsd(h)}
+                            </xsd:sequence>
+                        </xsd:complexType>
+                    </xsd:element>`).join("")}
+
+
+                    <!-- REQUEST BODY -->
+                    <xsd:element name="${stripNs(req.body.tagName)}">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                              ${xmlToXsd(req.body)}
+                            </xsd:sequence>
+                        </xsd:complexType>
+                    </xsd:element>
+                    <!-- RESPONSE BODY -->
+                    <xsd:element name="${stripNs(res.body.tagName)}">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                              ${xmlToXsd(res.body)}
+                            </xsd:sequence>
+                        </xsd:complexType>
+                    </xsd:element>
+                </xsd:schema>
+            </wsdl:types>
+            <!-- MESSAGES -->
+            <wsdl:message name="Request">
+                      ${req.headers.map(h =>
+                    `
+                <wsdl:part name="${stripNs(h.tagName)}" element="tns:${stripNs(h.tagName)}"/>`
+                ).join("")}
+
+                <wsdl:part name="body" element="tns:${stripNs(req.body.tagName)}"/>
+            </wsdl:message>
+            <wsdl:message name="Response">
+                      ${res.headers.map(h =>
+                    `
+                <wsdl:part name="${stripNs(h.tagName)}" element="tns:${stripNs(h.tagName)}"/>`
+                ).join("")}
+
+                <wsdl:part name="body" element="tns:${stripNs(res.body.tagName)}"/>
+            </wsdl:message>
+            <!-- PORT TYPE -->
+            <wsdl:portType name="${op}PortType">
+                <wsdl:operation name="${op}">
+                    <wsdl:input message="tns:Request"/>
+                    <wsdl:output message="tns:Response"/>
+                </wsdl:operation>
+            </wsdl:portType>
+            <!-- BINDING -->
+            <wsdl:binding name="${op}Binding" type="tns:${op}PortType">
+                <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+                <wsdl:operation name="${op}">
+                    <soap:operation soapAction="${op}"/>
+                    <wsdl:input>
+                          ${req.headers.map(h =>
+                    `
+                        <soap:header message="tns:${op}Request" part="${stripNs(h.tagName)}" use="literal"/>`
+                ).join("")}
+
+                        <soap:body use="literal"/>
+                    </wsdl:input>
+                    <wsdl:output>
+                          ${res.headers.map(h =>
+                    `
+                        <soap:header message="tns:${op}Response" part="${stripNs(h.tagName)}" use="literal"/>`
+                ).join("")}
+
+                        <soap:body use="literal"/>
+                    </wsdl:output>
+                </wsdl:operation>
+            </wsdl:binding>
+            <!-- SERVICE -->
+            <wsdl:service name="${op}Service">
+                <wsdl:port name="${op}Port" binding="tns:${op}Binding">
+                    <soap:address location="http://localhost:${SERVER_PORT}/soap"/>
+                </wsdl:port>
+            </wsdl:service>
+        </wsdl:definitions>
+            `;
+
+        document.getElementById("openApiPreview").textContent = wsdl;
+        return wsdl;
+    }
+
+    function extractSoapParts(xml) {
+        const doc = new DOMParser().parseFromString(xml, "application/xml");
+
+        const envelopeNS = "http://schemas.xmlsoap.org/soap/envelope/";
+
+        const headerEl = doc.getElementsByTagNameNS(envelopeNS, "Header")[0];
+        const bodyEl = doc.getElementsByTagNameNS(envelopeNS, "Body")[0];
+
+        return {
+            headers: headerEl ? [...headerEl.children] : [],
+            body: bodyEl ? bodyEl.firstElementChild : null
+        };
+    }
+
+    function stripNs(name) {
+        return name.includes(":") ? name.split(":")[1] : name;
+    }
+
+
+    function stripNs(tag) {
+        return tag.includes(":") ? tag.split(":")[1] : tag;
+    }
+
+    /* Convert XML node to XSD complexType recursively */
+    function xmlToXsd(node) {
+        let content = "";
+
+        [...node.children].forEach(child => {
+            const name = stripNs(child.tagName);
+            const value = child.textContent?.trim();
+
+            if (child.children.length > 0) {
+                content += `
+            <xsd:element name="${name}">
+              <xsd:complexType>
+                <xsd:sequence>
+                  ${xmlToXsd(child)}
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:element>`;
+            } else {
+                content += `
+            <xsd:element name="${name}" type="xsd:string" minOccurs="0"/>`;
+            }
+        });
+
+        return content;
+    }
+
+
+    // ---------- open and close tabs ----------
+    function toggleRequestBody() {
+        const section = document.getElementById('requestBodySection');
+        const icon = document.getElementById('requestToggleIcon');
+        if (section.style.display === 'block') {
+            section.style.display = 'none';
+            icon.classList.remove('bi-chevron-down');
+            icon.classList.add('bi-chevron-right');
+        } else {
+            section.style.display = 'block';
+            icon.classList.remove('bi-chevron-right');
+            icon.classList.add('bi-chevron-down');
+        }
+    }
+
+    function toggleResponseBody() {
+        const section = document.getElementById('responseBodySection');
+        const icon = document.getElementById('responseToggleIcon');
+        if (section.style.display === 'block') {
+            section.style.display = 'none';
+            icon.classList.remove('bi-chevron-down');
+            icon.classList.add('bi-chevron-right');
+        } else {
+            section.style.display = 'block';
+            icon.classList.remove('bi-chevron-right');
+            icon.classList.add('bi-chevron-down');
+        }
+    }
+
+    function openApiSpecTab() {
+        const tabTrigger = document.querySelectorAll('a[href="#apiSpec"]');
+        const tab = new bootstrap.Tab(tabTrigger);
+        tab.show();
+    }
+
+    document.querySelectorAll('#apiResourceTabs a[data-bs-toggle="tab"]')
+        .forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function (event) {
+                const activeTabId = event.target.getAttribute('href');
+                console.log('Active Tab:', activeTabId);
+
+                if (activeTabId === '#apiSpec') {
+                    console.log('API Specification tab opened');
+                }
+
+                if (activeTabId === '#authMethods') {
+                    console.log('Authentication Methods tab opened');
+                }
+            });
+        });
+
+    // Init
+    loadApiTable();
 </script>
 </body>
 </html>
