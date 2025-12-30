@@ -3,7 +3,7 @@ package org.mengsor.web_local_api.security.configsecurity;
 
 import com.nimbusds.jose.jwk.RSAKey;
 import lombok.RequiredArgsConstructor;
-import org.mengsor.web_local_api.security.customoauth.ResourceOwnerPasswordAuthenticationConverter;
+import org.mengsor.web_local_api.security.customoauth.CustomOAuth2AuthenticationConverter;
 import org.mengsor.web_local_api.security.customoauth.ResourceOwnerPasswordAuthenticationProvider;
 import org.mengsor.web_local_api.security.oauth.util.Jwks;
 import org.mengsor.web_local_api.security.services.CustomRegisteredClientRepository;
@@ -58,7 +58,7 @@ public class AuthorizationServerConfig {
 
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
                 .tokenEndpoint(tokenEndpoint -> tokenEndpoint
-                        .accessTokenRequestConverter(new ResourceOwnerPasswordAuthenticationConverter())
+                        .accessTokenRequestConverter(new CustomOAuth2AuthenticationConverter())
                         .authenticationProvider(new ResourceOwnerPasswordAuthenticationProvider(
                                 authenticationManager(),
                                 authorizationService(),
