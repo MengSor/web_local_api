@@ -1,59 +1,146 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" data-bs-theme="light">
 <head>
     <title>API Security</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* ========================= GLOBAL ========================= */
+        body, * {
+            font-family: 'Segoe UI', sans-serif;
+            box-sizing: border-box;
+        }
+        .main-content {
+            overflow-y: auto;       /* enable vertical scrolling */
+            max-height: 100vh;      /* full viewport height */
+            padding-top: 1rem;
+        }
+
+        /* ========================= CARDS ========================= */
+        .security-card {
+            padding: 28px;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 14px 36px rgba(0,0,0,0.1);
+        }
+        .glass-box {
+            padding: 20px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.65);
+            backdrop-filter: blur(10px);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
+        }
+        .glass-card {
+            border-radius: 14px;
+            background: rgba(255,255,255,0.65);
+            backdrop-filter: blur(12px);
+            padding: 20px;
+        }
+
+        hr {
+            border-color: #e5e7eb;
+        }
+
+        /* ========================= DARK THEME ========================= */
+        html[data-bs-theme='dark'] .main-content {
+            background: linear-gradient(180deg, #020617, #0f172a);
+            color: #e5e7eb;
+        }
+        html[data-bs-theme='dark'] .security-card,
+        html[data-bs-theme='dark'] .glass-box,
+        html[data-bs-theme='dark'] .glass-card {
+            background: rgba(15,23,42,0.85);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.6);
+        }
+        html[data-bs-theme='dark'] hr {
+            border-color: #1f2937;
+        }
+
+        /* ========================= STICKY HEADER ========================= */
+        .sticky-header {
+            position: sticky;
+            top: 0;                 /* stick to top */
+            z-index: 50;            /* above content */
+            background-color: inherit;
+            padding: 1rem 0;
+            backdrop-filter: blur(12px); /* glass effect */
+        }
+
+        /* ========================= TABLE ========================= */
+        .table-responsive {
+            max-height: 300px; /* scroll if many clients */
+            overflow-y: auto;
+        }
+
+        .glass-modal {
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(14px);
+            border-radius: 18px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+        }
+
+        html[data-bs-theme='dark'] .glass-modal {
+            background: rgba(15,23,42,0.9);
+            color: #e5e7eb;
+        }
+
+    </style>
 </head>
 <body>
-
 <div class="d-flex">
-    <!-- Sidebar -->
+    <!-- SIDEBAR -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-    <main class="flex-fill p-4">
-        <h2 class="mb-4">API Security</h2>
+    <!-- MAIN CONTENT -->
+    <main class="flex-fill p-5 main-content">
 
-        <form th:action="@{/page/setting/save}" th:object="${settingCache}" method="post" class="card p-4 shadow-sm">
+        <!-- HEADER -->
+        <header class="mb-4 sticky-header">
+            <h2 class="fw-bold mb-1">API Security</h2>
+            <p class="text-muted mb-0">Configure authentication and security mechanisms for your APIs</p>
+            <hr>
+        </header>
+
+        <!-- SECURITY FORM -->
+        <form th:action="@{/page/setting/save}" th:object="${settingCache}" method="post" class="security-card mt-4">
 
             <!-- Security Mode -->
-            <div class="mb-3">
-                <label class="form-label">Security Mode</label>
+            <div class="mb-4">
+                <label for="securityMode" class="form-label fw-semibold">Security Mode</label>
                 <select class="form-select" id="securityMode" th:field="*{securityMode}">
                     <option value="NONE">None</option>
-                    <option value="BASIC">Basic Auth</option>
+                    <option value="BASIC">Basic Authentication</option>
                     <option value="OAUTH2">OAuth 2</option>
-<!--                    <option value="JWT">JWT</option>-->
-<!--                    <option value="API_KEY">API Key</option>-->
                 </select>
             </div>
 
-            <!-- BASIC AUTH -->
-            <div id="basicAuthFields" class="border rounded p-3 mb-3" style="display:none;">
-                <h6 class="fw-bold mb-3"><i class="bi bi-person-lock"></i> Basic Authentication</h6>
-
-                <div class="mb-3">
-                    <label class="form-label">Username</label>
-                    <input type="text" class="form-control" id="basicUsername" th:field="*{username}">
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Password</label>
-                    <input type="password" class="form-control" name="password" th:value="${settingCache.password}">
+            <!-- Basic Auth Fields -->
+            <div id="basicAuthFields" class="glass-box mb-4" style="display:none;">
+                <h6 class="fw-bold mb-3"><i class="bi bi-person-lock me-1"></i> Basic Authentication</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" id="basicUsername" th:field="*{username}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" name="password" th:value="${settingCache.password}">
+                    </div>
                 </div>
             </div>
 
-            <!-- CLIENT REGISTRATION -->
-            <div id="clientSection" class="border rounded p-3 mb-3" style="display:none;">
-                <h6 class="fw-bold mb-3"><i class="bi bi-key"></i> Register Client</h6>
-
-                <div class="row">
-                    <div class="col-md-4 mb-2">
-                        <label class="form-label">Username (from Basic)</label>
+            <!-- Client Registration Section -->
+            <div id="clientSection" class="glass-box mb-4" style="display:none;">
+                <h6 class="fw-bold mb-3"><i class="bi bi-key me-1"></i> Register Client</h6>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Username</label>
                         <input type="text" class="form-control" id="clientUsername" readonly>
                     </div>
-
-                    <div class="col-md-4 mb-2">
+                    <div class="col-md-4">
                         <label class="form-label">Token Unit</label>
                         <select class="form-select" id="tokenUnit">
                             <option value="SECONDS">Seconds</option>
@@ -61,71 +148,176 @@
                             <option value="HOURS">Hours</option>
                         </select>
                     </div>
-
-                    <div class="col-md-4 mb-2">
+                    <div class="col-md-4">
                         <label class="form-label">Duration</label>
                         <input type="number" class="form-control" id="tokenDuration" value="30">
                     </div>
-
-                    <div class="mb-3">
+                    <div class="col-12">
                         <label class="form-label">Token URL</label>
                         <input type="text" class="form-control"
-                               placeholder="https://auth.example.com/oauth/token"
-                               th:value="'http://localhost:' + ${serverPort} + '/oauth2/token'">
+                               th:value="'http://localhost:' + ${serverPort} + '/oauth2/token'" readonly>
                     </div>
                 </div>
             </div>
 
-            <!-- CLIENT TABLE -->
-            <div id="clientTableSection" class="border rounded p-3 mb-3" style="display:none;">
-                <h6 class="fw-bold"><i class="bi bi-table"></i> Registered Clients</h6>
-                <table class="table table-sm table-bordered mt-2">
-                    <thead class="table-light">
-                    <tr>
-                        <th>Username</th>
-                        <th>Client ID</th>
-                        <th>Client Secret</th>
-                        <th>Type</th>
-                        <th>Token Unit</th>
-                        <th>Duration</th>
-                    </tr>
-                    </thead>
-                    <tbody id="clientTableBody">
-                    <tr th:if="${settingCache.clientId != null}">
-                        <td th:text="${settingCache.username}"></td>
-                        <td th:text="${settingCache.clientId}"></td>
-                        <td th:text="${settingCache.clientSecret}"></td>
-                        <td th:text="${settingCache.securityMode}"></td>
-                        <td th:text="${settingCache.tokenUnit}"></td>
-                        <td th:text="${settingCache.tokenDuration}"></td>
-                    </tr>
-                    </tbody>
-                </table>
+            <!-- Registered Clients Table -->
+            <div id="clientTableSection" class="glass-box mb-4" style="display:none;">
+                <h6 class="fw-bold mb-3"><i class="bi bi-table me-1"></i> Registered Clients</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Username</th>
+                            <th>Client ID</th>
+                            <th>Client Secret</th>
+                            <th>Type</th>
+                            <th>Unit</th>
+                            <th>Duration</th>
+                        </tr>
+                        </thead>
+                        <tbody id="clientTableBody">
+                        <tr th:if="${settingCache.clientId != null}">
+                            <td th:text="${settingCache.username}"></td>
+                            <td th:text="${settingCache.clientId}"></td>
+                            <td th:text="${settingCache.clientSecret}"></td>
+                            <td th:text="${settingCache.securityMode}"></td>
+                            <td th:text="${settingCache.tokenUnit}"></td>
+                            <td th:text="${settingCache.tokenDuration}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <!-- BUTTONS -->
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" id="saveBtn" class="btn btn-primary">
-                    <i class="bi bi-save"></i> Save
+            <!-- ACTION BUTTONS -->
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" id="saveBtn" class="btn btn-primary"><i class="bi bi-save"></i> Save</button>
+                <button type="button" id="oauthBtn" class="btn btn-success d-none"
+                        onclick="registerClient('OAUTH2')">
+                    <i class="bi bi-shield-lock"></i> Register OAuth2
                 </button>
-                <button type="button" id="oauthBtn" class="btn btn-success d-none" onclick="registerClient('OAUTH2')">
-                    <i class="bi bi-shield-lock"></i> Register OAuth2 Client
-                </button>
-                <button type="button" id="jwtBtn" class="btn btn-warning d-none" onclick="registerClient('JWT')">
-                    <i class="bi bi-patch-check"></i> Register JWT Client
-                </button>
-                <button type="button" id="apiKeyBtn" class="btn btn-dark d-none" onclick="registerClient('API_KEY')">
-                    <i class="bi bi-key"></i> Register API Key
+                <button type="button"
+                        class="btn btn-outline-primary d-none"
+                        id="tokenBtn"
+                        data-bs-toggle="modal"
+                        data-bs-target="#accessTokenModal">
+                    <i class="bi bi-key"></i> Get Access Token
                 </button>
             </div>
         </form>
 
-        <!-- Success message -->
-        <div class="mt-3 text-success" th:text="${message}"></div>
+        <!-- UI Preferences -->
+        <div class="glass-card mt-5 p-4">
+            <h5 class="fw-bold mb-3">UI Preferences</h5>
+            <div class="mb-3">
+                <label class="form-label">Theme</label>
+                <select class="form-select">
+                    <option>Dark (3D)</option>
+                    <option>Light</option>
+                    <option>Blue Tech</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Language</label>
+                <select class="form-select">
+                    <option>English</option>
+                    <option>Khmer</option>
+                    <option>French</option>
+                </select>
+            </div>
+            <button class="btn btn-primary">Save UI</button>
+        </div>
+
+        <div class="mt-3 text-success fw-semibold" th:text="${message}"></div>
     </main>
 </div>
 
-<!-- SCRIPT -->
+<!-- ================= TOKEN MODAL ================= -->
+<div class="modal fade" id="accessTokenModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content token-glass">
+
+            <!-- Header -->
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-shield-lock"></i> OAuth2 Access Token
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body">
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label class="form-label">Grant Type</label>
+                        <select id="atkGrantType" class="form-select">
+                            <option value="client_credentials">client_credentials</option>
+                            <option value="password">password</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Token URL</label>
+                        <input id="atkTokenUrl"
+                               class="form-control"
+                               th:value="'http://localhost:' + ${serverPort} + '/oauth2/token'">
+                    </div>
+
+                    <!-- Username / Password -->
+                    <div id="atkUserBlock" class="row g-3 d-none">
+                        <div class="col-md-6">
+                            <label class="form-label">Username</label>
+                            <input id="atkUsername" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Password</label>
+                            <input id="atkPassword" type="password" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Client ID</label>
+                        <input id="atkClientId" class="form-control">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Client Secret</label>
+                        <input id="atkClientSecret" class="form-control">
+                    </div>
+
+
+                    <!-- Result -->
+                    <div class="col-12 mt-3">
+                        <label class="form-label fw-semibold">Access Token</label>
+                        <textarea id="atkResult"
+                                  rows="4"
+                                  class="form-control"
+                                  readonly></textarea>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer border-0">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button class="btn btn-outline-success" onclick="copyAccessToken()">
+                    <i class="bi bi-clipboard"></i> Copy
+                </button>
+                <button class="btn btn-primary" onclick="requestAccessToken()">
+                    <i class="bi bi-send"></i> Request
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<!-- ========================= SCRIPTS ========================= -->
 <script>
     const clientModes = ["OAUTH2", "JWT", "API_KEY"];
 
@@ -133,20 +325,17 @@
         const mode = document.getElementById("securityMode").value;
         const username = document.getElementById("basicUsername")?.value || "";
 
-        // Show/Hide sections
         document.getElementById("basicAuthFields").style.display = mode === "BASIC" ? "block" : "none";
-        const clientSectionVisible = clientModes.includes(mode);
-        document.getElementById("clientSection").style.display = clientSectionVisible ? "block" : "none";
-        document.getElementById("clientTableSection").style.display = clientSectionVisible ? "block" : "none";
 
-        // Show/Hide buttons
+        const showClient = clientModes.includes(mode);
+        document.getElementById("clientSection").style.display = showClient ? "block" : "none";
+        document.getElementById("clientTableSection").style.display = showClient ? "block" : "none";
+
         document.getElementById("saveBtn").style.display = (mode === "NONE" || mode === "BASIC") ? "inline-block" : "none";
         document.getElementById("oauthBtn").classList.toggle("d-none", mode !== "OAUTH2");
-        document.getElementById("jwtBtn").classList.toggle("d-none", mode !== "JWT");
-        document.getElementById("apiKeyBtn").classList.toggle("d-none", mode !== "API_KEY");
+        document.getElementById("tokenBtn").classList.toggle("d-none", mode !== "OAUTH2");
 
-        // Set username for token clients
-        if (clientSectionVisible) {
+        if (showClient) {
             if (!username) {
                 alert("Please configure BASIC username first");
                 document.getElementById("securityMode").value = "BASIC";
@@ -157,33 +346,19 @@
         }
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-        toggleSecurityMode();
-        document.getElementById("securityMode").addEventListener("change", toggleSecurityMode);
-    });
-
     async function registerClient(type) {
         const username = document.getElementById("clientUsername").value;
         const unit = document.getElementById("tokenUnit").value;
         const duration = document.getElementById("tokenDuration").value;
 
-        if (!username) {
-            alert("Please configure BASIC username first");
-            return;
-        }
+        const res = await fetch('/page/client/register', {
+            method: 'POST',
+            headers: {'Content-Type':'application/x-www-form-urlencoded'},
+            body: new URLSearchParams({ type, username, tokenUnit: unit, tokenDuration: duration })
+        });
+        const data = await res.json();
 
-        try {
-            const response = await fetch('/page/client/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ type, username, tokenUnit: unit, tokenDuration: duration })
-            });
-
-            const data = await response.json();
-
-            // Update table
-            const tbody = document.getElementById("clientTableBody");
-            tbody.innerHTML = `
+        document.getElementById("clientTableBody").innerHTML = `
             <tr>
                 <td>${data.username}</td>
                 <td>${data.clientId}</td>
@@ -191,16 +366,63 @@
                 <td>${data.securityMode}</td>
                 <td>${data.tokenUnit}</td>
                 <td>${data.tokenDuration}</td>
-            </tr>
-        `;
+            </tr>`;
+    }
 
-            alert(`${type} client registered successfully!\nClient Secret: ${data.clientSecret}`);
+    document.addEventListener("DOMContentLoaded", () => {
+        toggleSecurityMode();
+        document.getElementById("securityMode").addEventListener("change", toggleSecurityMode);
+    });
+
+    // Toggle username/password based on grant type
+    document.getElementById("atkGrantType").addEventListener("change", e => {
+        document.getElementById("atkUserBlock")
+            .classList.toggle("d-none", e.target.value !== "password");
+    });
+
+    // Request OAuth2 access token
+    async function requestAccessToken() {
+
+        const url = document.getElementById("atkTokenUrl").value;
+        const grantType = document.getElementById("atkGrantType").value;
+
+        const body = new URLSearchParams({ grant_type: grantType });
+
+        if (grantType === "password") {
+            body.append("username", document.getElementById("atkUsername").value);
+            body.append("password", document.getElementById("atkPassword").value);
+        }
+
+        const authHeader = btoa(
+            document.getElementById("atkClientId").value + ":" +
+            document.getElementById("atkClientSecret").value
+        );
+
+        try {
+            const res = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Authorization": "Basic " + authHeader,
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body
+            });
+
+            const json = await res.json();
+            document.getElementById("atkResult").value =
+                json.access_token || JSON.stringify(json, null, 2);
+
         } catch (err) {
-            console.error(err);
-            alert("Failed to register client");
+            document.getElementById("atkResult").value = "Failed to retrieve token";
         }
     }
-</script>
 
+    // Copy token
+    function copyAccessToken() {
+        navigator.clipboard.writeText(
+            document.getElementById("atkResult").value
+        );
+    }
+</script>
 </body>
 </html>

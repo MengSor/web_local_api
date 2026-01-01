@@ -59,10 +59,70 @@ public class CryptoUtil {
 
     private static boolean isBase64(String value) {
         try {
-            Base64.getDecoder().decode(value);
+            // try URL-safe first
+            Base64.getUrlDecoder().decode(value);
             return true;
         } catch (IllegalArgumentException e) {
-            return false;
+            try {
+                Base64.getDecoder().decode(value);
+                return true;
+            } catch (IllegalArgumentException ex) {
+                return false;
+            }
         }
     }
+
+    public static String encryptV(String value) {
+        try {
+            Cipher cipher = Cipher.getInstance(AES);
+            cipher.init(
+                    Cipher.ENCRYPT_MODE,
+                    new SecretKeySpec(KEY.getBytes(StandardCharsets.UTF_8), AES)
+            );
+
+            byte[] encrypted = cipher.doFinal(value.getBytes(StandardCharsets.UTF_8));
+
+            // ✅ URL SAFE (NO + / =)
+            return Base64.getUrlEncoder()
+                    .withoutPadding()
+                    .encodeToString(encrypted);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Encryption failed", e);
+        }
+    }
+
+    /**
+     * Decrypts value.
+     * If value is NOT encrypted, returns it as-is.
+     */
+    public static String decryptV(String value) {
+        if (value == null || value.isBlank()) {
+            return value;
+        }
+
+        try {
+            // 1️⃣ Validate Base64 (URL-safe + normal)
+            if (!isBase64(value)) {
+                return value;
+            }
+
+            Cipher cipher = Cipher.getInstance(AES);
+            cipher.init(
+                    Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(KEY.getBytes(StandardCharsets.UTF_8), AES)
+            );
+
+            byte[] decoded = Base64.getUrlDecoder().decode(value);
+            byte[] decrypted = cipher.doFinal(decoded);
+
+            return new String(decrypted, StandardCharsets.UTF_8);
+
+        } catch (Exception e) {
+            // 2️⃣ Any crypto error → treat as plain text
+            return value;
+        }
+    }
+
+
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" data-bs-theme="light">
 <head>
     <title>Create New API</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,7 +12,7 @@
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <!-- Main Content -->
-    <main class="flex-fill p-4">
+    <main class="flex-fill p-4 main-content">
 
         <!-- Page Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -33,13 +33,13 @@
         </div>
 
         <!-- API Table -->
-        <div class="table-responsive">
-            <table class="table table-bordered align-middle">
+        <div class="table-responsive glass-card p-3">
+            <table class="table table-bordered table-hover align-middle">
                 <thead class="table-light">
                 <tr>
                     <th>Name</th>
                     <th>Base URL</th>
-                    <th>createdDate</th>
+                    <th>Created Date</th>
                     <th>Protocol</th>
                     <th>Actions</th>
                 </tr>
@@ -52,10 +52,16 @@
                     </td>
                     <td th:text="${api.baseUrl}"></td>
                     <td th:text="${api.createdDate}"></td>
-                    <td th:text="${api.protocol}"></td>
                     <td>
-                        <button class="btn btn-danger btn-sm"
-                                th:onclick="|deleteApi(${api.id})|">
+                        <span class="badge protocol-badge"
+                              th:text="${api.protocol}"
+                              th:classappend="
+                                ${api.protocol == 'HTTP'} ? ' bg-primary' :
+                                (${api.protocol == 'HTTPS'} ? ' bg-success' : ' bg-warning text-dark')">
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" th:onclick="|deleteApi(${api.id})|">
                             <i class="bi bi-trash"></i>
                         </button>
                     </td>
@@ -70,7 +76,7 @@
 <!-- Create API Modal -->
 <div class="modal fade" id="createApiModal" tabindex="-1" aria-labelledby="createApiModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <form th:action="@{/page/create-new-api/save}" method="post" class="modal-content">
+        <form th:action="@{/page/create-new-api/save}" method="post" class="modal-content glass-card p-3">
             <div class="modal-header">
                 <h5 class="modal-title" id="createApiModalLabel">Create New API</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -104,26 +110,171 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function deleteApi(id) {
-        if (!confirm('Are you sure you want to delete this API?')) {
-            return;
-        }
+        if (!confirm('Are you sure you want to delete this API?')) return;
 
         fetch(`/page/create-new-api/delete/${id}`, {
             method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Delete failed');
-                }
-                location.reload();
-            })
-            .catch(err => {
-                alert(err.message);
-            });
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).then(response => {
+            if (!response.ok) throw new Error('Delete failed');
+            location.reload();
+        }).catch(err => alert(err.message));
     }
 </script>
+
+<!-- 3HD Glass + Dark Mode Styles -->
+<style>
+    /* Main content */
+    .main-content {
+        min-height: 100vh;
+        color: #1f2937;
+        background: linear-gradient(180deg, #f9fafb, #eef2f7);
+        transition: all 0.3s ease;
+    }
+
+    /* Glass cards */
+    .glass-card {
+        backdrop-filter: blur(12px);
+        background: rgba(255,255,255,0.75);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        border-radius: 12px;
+        transition: all 0.25s ease;
+    }
+
+    /* Table hover 3HD effect */
+    .table-hover tbody tr {
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    .table-hover tbody tr:hover {
+        box-shadow: 0 0 15px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.1);
+        transform: scale(1.01);
+        z-index: 1;
+    }
+
+    /* Protocol badges */
+    .protocol-badge {
+        font-weight: 500;
+        padding: 0.4em 0.7em;
+        border-radius: 0.45rem;
+        transition: all 0.3s ease, box-shadow 0.4s ease;
+        cursor: default;
+    }
+    .protocol-badge:hover { transform: scale(1.1); }
+
+    /* Glow animations */
+    @keyframes pulse-http {0%,100%{box-shadow:0 0 0 rgba(59,130,246,0.5);}50%{box-shadow:0 0 15px rgba(59,130,246,0.6);}}
+    @keyframes pulse-https {0%,100%{box-shadow:0 0 0 rgba(34,197,94,0.5);}50%{box-shadow:0 0 15px rgba(34,197,94,0.6);}}
+    @keyframes pulse-soap {0%,100%{box-shadow:0 0 0 rgba(250,204,21,0.5);}50%{box-shadow:0 0 15px rgba(250,204,21,0.6);}}
+
+    .protocol-badge.bg-primary { background-color:#3b82f6!important; color:#fff!important; animation:pulse-http 2s infinite ease-in-out; }
+    .protocol-badge.bg-success { background-color:#22c55e!important; color:#fff!important; animation:pulse-https 2s infinite ease-in-out; }
+    .protocol-badge.bg-warning { background-color:#facc15!important; color:#1f2937!important; animation:pulse-soap 2s infinite ease-in-out; }
+
+    /* Buttons */
+    .btn { transition: all 0.3s ease; }
+    .btn:hover { transform: scale(1.05); box-shadow: 0 0 8px rgba(59,130,246,0.6),0 0 15px rgba(59,130,246,0.4),0 0 25px rgba(59,130,246,0.2); }
+
+    /* Dark Mode */
+    html[data-bs-theme='dark'] .main-content {
+        background: linear-gradient(180deg, #020617, #0f172a);
+        color: #e5e7eb;
+    }
+    html[data-bs-theme='dark'] .glass-card {
+        background: rgba(15,23,42,0.85);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    }
+    html[data-bs-theme='dark'] .protocol-badge.bg-primary,
+    html[data-bs-theme='dark'] .protocol-badge.bg-success,
+    html[data-bs-theme='dark'] .protocol-badge.bg-warning {
+        animation-duration: 2s;
+    }
+
+    /* Table container glass effect */
+    .table-responsive.glass-card {
+        backdrop-filter: blur(15px);
+        background: rgba(255, 255, 255, 0.75);
+        border-radius: 15px;
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    /* Table headers: shimmering gradient */
+    .table thead {
+        background: linear-gradient(270deg, #3b82f6, #22c55e, #facc15, #ef4444);
+        background-size: 800% 800%;
+        color: #fff;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        animation: gradient-shimmer 10s ease infinite;
+        border-radius: 12px 12px 0 0;
+    }
+    .table thead th {
+        border: none;
+    }
+
+    /* Table rows: vibrant gradient backgrounds */
+    .table tbody tr {
+        transition: all 0.3s ease;
+        position: relative;
+        background: linear-gradient(120deg, #fef9c3, #fde68a);
+    }
+    .table tbody tr:nth-child(even) {
+        background: linear-gradient(120deg, #bfdbfe, #60a5fa);
+    }
+
+    /* Row hover: neon glow */
+    .table tbody tr:hover {
+        box-shadow: 0 0 20px rgba(59,130,246,0.4), 0 0 30px rgba(34,197,94,0.3), 0 0 40px rgba(250,204,21,0.2);
+        transform: scale(1.02);
+        z-index: 2;
+    }
+
+    /* Protocol badges: glowing */
+    .protocol-badge {
+        font-weight: 500;
+        padding: 0.4em 0.7em;
+        border-radius: 0.45rem;
+        transition: all 0.3s ease, box-shadow 0.4s ease;
+        cursor: default;
+    }
+    .protocol-badge.bg-primary { animation: pulse-http 2s infinite ease-in-out; }
+    .protocol-badge.bg-success { animation: pulse-https 2s infinite ease-in-out; }
+    .protocol-badge.bg-warning { animation: pulse-soap 2s infinite ease-in-out; }
+
+    @keyframes pulse-http { 0%,100%{box-shadow:0 0 0 rgba(59,130,246,0.5);} 50%{box-shadow:0 0 15px rgba(59,130,246,0.6);} }
+    @keyframes pulse-https { 0%,100%{box-shadow:0 0 0 rgba(34,197,94,0.5);} 50%{box-shadow:0 0 15px rgba(34,197,94,0.6);} }
+    @keyframes pulse-soap { 0%,100%{box-shadow:0 0 0 rgba(250,204,21,0.5);} 50%{box-shadow:0 0 15px rgba(250,204,21,0.6);} }
+
+    /* Header gradient shimmer */
+    @keyframes gradient-shimmer {
+        0%{background-position:0% 50%;}
+        50%{background-position:100% 50%;}
+        100%{background-position:0% 50%;}
+    }
+
+    /* Dark mode table */
+    html[data-bs-theme='dark'] .table-responsive.glass-card {
+        background: rgba(20, 25, 40, 0.85);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.7);
+    }
+    html[data-bs-theme='dark'] .table thead {
+        color: #f8f9fa;
+        background: linear-gradient(270deg, #3b82f6, #22c55e, #facc15, #ef4444);
+        background-size: 800% 800%;
+        animation: gradient-shimmer 12s ease infinite;
+    }
+    html[data-bs-theme='dark'] .table tbody tr {
+        background: linear-gradient(120deg, #1e1e2f, #2c2c4a);
+    }
+    html[data-bs-theme='dark'] .table tbody tr:nth-child(even) {
+        background: linear-gradient(120deg, #2c2c4a, #3b3b6a);
+    }
+    html[data-bs-theme='dark'] .table tbody tr:hover {
+        box-shadow: 0 0 25px rgba(59,130,246,0.6), 0 0 35px rgba(34,197,94,0.5), 0 0 45px rgba(250,204,21,0.4);
+    }
+</style>
+
 </body>
 </html>

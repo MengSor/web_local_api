@@ -3,141 +3,240 @@
 <head>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 </head>
-<body>
-<div th:fragment="sidebar">
-    <nav class="vh-100 d-flex flex-column justify-content-between p-3 border-end sidebar-nav" style="width:240px;">
 
+<body>
+
+<div th:fragment="sidebar">
+
+    <nav id="sidebar" class="vh-100 d-flex flex-column justify-content-between p-3 sidebar-nav">
+
+        <!-- TOP -->
         <div>
-            <h5 class="mb-4 fw-bold sidebar-title">API Test</h5>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold sidebar-title mb-0">API Test</h5>
+                <button id="sidebarToggle" class="btn btn-sm sidebar-toggle-btn">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+            </div>
 
             <ul class="nav nav-pills flex-column gap-1">
                 <li class="nav-item">
                     <a th:href="@{/page/home}"
-                       class="nav-link d-flex align-items-center sidebar-link"
+                       class="nav-link sidebar-link d-flex align-items-center"
+                       data-title="Home"
                        th:classappend="${activePage=='home'} ? 'active'">
-                        <i class="bi bi-house me-2"></i>
-                        Home
+                        <i class="bi bi-house"></i>
+                        <span class="link-text">Home</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
                     <a th:href="@{/page/create-new-api}"
-                       class="nav-link d-flex align-items-center sidebar-link"
+                       class="nav-link sidebar-link d-flex align-items-center"
+                       data-title="API Config"
                        th:classappend="${activePage=='create-new-api'} ? 'active'">
-                        <i class="bi bi-sliders me-2"></i>
-                        API Config
+                        <i class="bi bi-sliders"></i>
+                        <span class="link-text">API Config</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
                     <a th:href="@{/page/request-log}"
-                       class="nav-link d-flex align-items-center sidebar-link"
+                       class="nav-link sidebar-link d-flex align-items-center"
+                       data-title="Request Log"
                        th:classappend="${activePage=='request-log'} ? 'active'">
-                        <i class="bi bi-list-check me-2"></i>
-                        Request Log
+                        <i class="bi bi-list-check"></i>
+                        <span class="link-text">Request Log</span>
                     </a>
                 </li>
 
                 <li class="nav-item">
                     <a th:href="@{/page/setting}"
-                       class="nav-link d-flex align-items-center sidebar-link"
+                       class="nav-link sidebar-link d-flex align-items-center"
+                       data-title="Setting"
                        th:classappend="${activePage=='setting'} ? 'active'">
-                        <i class="bi bi-gear me-2"></i>
-                        Setting
+                        <i class="bi bi-gear"></i>
+                        <span class="link-text">Setting</span>
                     </a>
                 </li>
             </ul>
         </div>
 
-        <!-- Dark Mode Toggle Button -->
+        <!-- BOTTOM -->
         <div class="mt-4">
-            <button id="themeToggleBtn" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center">
-                <i id="themeIcon" class="bi me-2"></i>
-                Toggle Dark Mode
+            <button id="themeToggleBtn"
+                    class="btn w-100 sidebar-link d-flex align-items-center justify-content-center"
+                    data-title="Toggle Theme">
+                <i id="themeIcon" class="bi"></i>
+                <span class="link-text ms-2">Dark Mode</span>
             </button>
         </div>
     </nav>
 
-    <!-- Sidebar Custom Style -->
+    <!-- =========================
+         STYLES (3HD + GLASS)
+    ========================= -->
     <style>
-        .sidebar-nav {
-            background-color: var(--bs-body-bg, #f8f9fa);
-        }
-        .sidebar-title {
-            color: var(--bs-body-color, #212529);
-        }
-        .sidebar-link {
-            border-radius: 6px;
-            font-weight: 500;
-            color: var(--bs-body-color, #212529);
-        }
-        .sidebar-link:hover {
-            background-color: var(--bs-gray-200, #e9ecef);
-        }
-        .sidebar-link.active {
-            background-color: var(--bs-primary, #0d6efd);
-            color: #fff !important;
-        }
-        .sidebar-link.active i {
-            color: #fff;
+        /* Base */
+        #sidebar {
+            width: 240px;
+            transition: width 0.3s ease;
+            overflow-x: hidden;
         }
 
-        /* Dark Mode Overrides */
-        html[data-bs-theme='dark'] .sidebar-nav {
-            background-color: #212529;
+        /* 3HD Glass Background */
+        .sidebar-nav {
+            backdrop-filter: blur(14px);
+            background:
+                    linear-gradient(180deg, rgba(248,249,252,0.85), rgba(238,241,247,0.85)),
+                    radial-gradient(circle at top left, rgba(255,255,255,0.6), transparent 60%);
+            box-shadow: 2px 0 18px rgba(0,0,0,0.08);
         }
-        html[data-bs-theme='dark'] .sidebar-title {
-            color: #f8f9fa;
+
+        /* Title */
+        .sidebar-title {
+            color: #1f2937;
         }
-        html[data-bs-theme='dark'] .sidebar-link {
-            color: #f8f9fa;
+
+        /* Links */
+        .sidebar-link {
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            color: #374151;
+            font-weight: 500;
+            transition: all 0.25s ease;
         }
-        html[data-bs-theme='dark'] .sidebar-link:hover {
-            background-color: #343a40;
+
+        .sidebar-link:hover {
+            background: linear-gradient(135deg, #ffffff, #eef2ff);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
         }
-        html[data-bs-theme='dark'] .sidebar-link.active {
-            background-color: #0d6efd;
-            color: #fff !important;
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #4f46e5, #3b82f6);
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(79,70,229,0.45);
         }
-        #themeToggleBtn {
+
+        /* Toggle button */
+        .sidebar-toggle-btn {
+            background: linear-gradient(135deg, #e0e7ff, #eef2ff);
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+        }
+
+        /* COLLAPSED */
+        #sidebar.collapsed {
+            width: 70px;
+        }
+
+        #sidebar.collapsed .link-text,
+        #sidebar.collapsed .sidebar-title {
+            display: none;
+        }
+
+        #sidebar.collapsed .sidebar-link {
+            justify-content: center;
+            padding: 12px;
+        }
+
+        #sidebar.collapsed .sidebar-toggle-btn i {
+            transform: rotate(180deg);
+        }
+
+        /* TOOLTIP */
+        #sidebar.collapsed .sidebar-link {
+            position: relative;
+        }
+
+        #sidebar.collapsed .sidebar-link::after {
+            content: attr(data-title);
+            position: absolute;
+            left: 72px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #111827;
+            color: #fff;
+            padding: 6px 10px;
             border-radius: 6px;
+            font-size: 0.8rem;
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+            transition: opacity 0.2s ease;
+        }
+
+        #sidebar.collapsed .sidebar-link:hover::after {
+            opacity: 1;
+        }
+
+        /* DARK MODE */
+        html[data-bs-theme='dark'] .sidebar-nav {
+            background:
+                    linear-gradient(180deg, rgba(15,23,42,0.9), rgba(2,6,23,0.9)),
+                    radial-gradient(circle at top left, rgba(59,130,246,0.2), transparent 60%);
+            box-shadow: 2px 0 20px rgba(0,0,0,0.6);
+        }
+
+        html[data-bs-theme='dark'] .sidebar-link {
+            color: #c7d2fe;
+        }
+
+        html[data-bs-theme='dark'] .sidebar-link:hover {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+        }
+
+        html[data-bs-theme='dark'] .sidebar-link.active {
+            background: linear-gradient(135deg, #6366f1, #3b82f6);
         }
     </style>
 
-    <!-- Dark Mode Script -->
+    <!-- =========================
+         SCRIPT
+    ========================= -->
     <script>
-        function applyTheme(theme) {
-            document.documentElement.setAttribute("data-bs-theme", theme);
-            localStorage.setItem("theme", theme);
-            updateIcon(theme);
-        }
+        document.addEventListener("DOMContentLoaded", () => {
 
-        function toggleTheme() {
-            const current = document.documentElement.getAttribute("data-bs-theme");
-            applyTheme(current === "dark" ? "light" : "dark");
-        }
+            const sidebar = document.getElementById("sidebar");
+            const toggleBtn = document.getElementById("sidebarToggle");
+            const themeBtn = document.getElementById("themeToggleBtn");
+            const themeIcon = document.getElementById("themeIcon");
 
-        function updateIcon(theme) {
-            const icon = document.getElementById("themeIcon");
-            if(theme === "dark") {
-                icon.className = "bi bi-sun-fill me-2";
-            } else {
-                icon.className = "bi bi-moon-stars-fill me-2";
+            /* Sidebar state */
+            if (localStorage.getItem("sidebar") === "collapsed") {
+                sidebar.classList.add("collapsed");
             }
-        }
 
-        document.addEventListener("DOMContentLoaded", function () {
-            // Load saved theme
-            const savedTheme = localStorage.getItem("theme") || "light";
-            applyTheme(savedTheme);
+            toggleBtn.onclick = () => {
+                sidebar.classList.toggle("collapsed");
+                localStorage.setItem(
+                    "sidebar",
+                    sidebar.classList.contains("collapsed") ? "collapsed" : "expanded"
+                );
+            };
 
-            // Button click
-            document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
+            /* Theme */
+            function setTheme(theme) {
+                document.documentElement.setAttribute("data-bs-theme", theme);
+                localStorage.setItem("theme", theme);
+                themeIcon.className = theme === "dark"
+                    ? "bi bi-sun-fill"
+                    : "bi bi-moon-stars-fill";
+            }
+
+            setTheme(localStorage.getItem("theme") || "light");
+
+            themeBtn.onclick = () => {
+                setTheme(
+                    document.documentElement.getAttribute("data-bs-theme") === "dark"
+                        ? "light"
+                        : "dark"
+                );
+            };
         });
     </script>
 
 </div>
 </body>
 </html>
-
-

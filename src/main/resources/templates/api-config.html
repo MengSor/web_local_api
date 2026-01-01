@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" data-bs-theme="light">
 <head>
-    <title>Rest API Query Account Configuration</title>
+    <title>API Query Account Configuration</title>
 
     <!-- Bootstrap & Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
 
     <!-- CodeMirror -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
@@ -14,9 +15,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/xml/xml.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/htmlmixed/htmlmixed.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- js-beautify -->
     <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.14.0/js/lib/beautify.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.14.0/js/lib/beautify-html.js"></script>
@@ -24,40 +24,80 @@
     <style>
         html, body {
             height: 100%;
-        }
-        .CodeMirror {
-            height: 180px;              /* fixed visible height */
-            max-height: 180px;
-            /*overflow-y: auto !important;*/
-            /*overflow-x: auto;*/
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        .header-row input {
-            width: 100%;
-        }
-        /* Sticky section headers */
-        label.sticky-top {
-            position: sticky;
-            top: 0;
-            background-color: #fff;
-            z-index: 10;
-            padding-top: 0.25rem;
-            padding-bottom: 0.25rem;
-        }
-        /* Scrollable request headers container */
-        #headersContainerWrapper {
-            max-height: 250px;
-            overflow:auto;
+            background: linear-gradient(160deg, #f0f4f8, #d9e2ec);
+            font-family: "Inter", sans-serif;
         }
 
-        /* Dark Mode Overrides */
+        /* Flex layout */
+        .d-flex { display: flex !important; }
+
+        /* Main content */
+        main {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* Cards & 3D effect */
+        .card {
+            border-radius: 14px;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 18px 40px rgba(0,0,0,0.12); }
+
+        /* Headers */
+        h2, h5 { font-weight: 600; }
+
+        /* Buttons */
+        button { border-radius: 8px; }
+
+        /* CodeMirror editor */
+        .CodeMirror {
+            height: 180px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        /* Request/Response textareas */
+        textarea.form-control {
+            border-radius: 8px;
+            font-family: monospace;
+        }
+
+        /* Feature param editor */
+        .param-editor {
+            border: 1px dashed #cbd5e1;
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 10px;
+            background: rgba(250,250,250,0.8);
+        }
+
+        .param-box { max-height: 220px; }
+
+        /* Toggle icons */
+        .bi-chevron-down, .bi-chevron-up { cursor: pointer; }
+
+        /* Scrollable sections */
+        .flex-fill.overflow-auto { overflow-y: auto; }
+
+        /* Dark mode */
         html[data-bs-theme='dark'] body {
-            background-color: #121212;
+            background: linear-gradient(160deg, #0b0f19, #121829);
             color: #e0e0e0;
         }
-        html[data-bs-theme='dark'] .card, html[data-bs-theme='dark'] .form-control, html[data-bs-theme='dark'] .CodeMirror {
+        html[data-bs-theme='dark'] .card {
+            background: rgba(20,25,35,0.85);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.6);
+        }
+        html[data-bs-theme='dark'] .param-editor {
+            background: rgba(30,30,30,0.85);
+            border-color: #555;
+        }
+        html[data-bs-theme='dark'] .form-control, html[data-bs-theme='dark'] .CodeMirror {
             background-color: #1e1e1e;
             color: #e0e0e0;
         }
@@ -65,39 +105,6 @@
             background: #1e1e1e;
             border-right: 1px solid #555;
         }
-        html[data-bs-theme='dark'] .CodeMirror-cursor {
-            border-left: 1px solid #fff;
-        }
-        .request-body-scroll {
-            height: 180px !important;
-            max-height: 180px !important;
-            overflow-y: scroll !important;
-            overflow-x: auto;
-            resize: vertical;
-        }
-
-        /*.scroll-textarea {*/
-        /*    overflow-y: auto;*/
-        /*    resize: vertical;*/
-        /*    white-space: pre;*/
-        /*    max-height: 300px;*/
-        /*}*/
-        .param-editor {
-            border: 1px dashed #444;
-            border-radius: 6px;
-            padding: 10px;
-        }
-
-        .param-box {
-            max-height: 220px;
-            /*overflow-y: auto;*/
-        }
-
-        .param-row input {
-            background-color: #1e1e1e;
-            color: #fff;
-        }
-
     </style>
 </head>
 
@@ -280,7 +287,7 @@
 
                     <div id="requestBodySection" style="display:block;">
                       <textarea id="requestBody" th:field="*{requestBody}" class="form-control"
-                      rows="6" oninput="autoResize(this)"></textarea>
+                                rows="6" oninput="autoResize(this)"></textarea>
                         <div class="mt-2 d-flex align-items-center gap-2 beautify-box">
                             <select id="requestFormat"
                                     th:field="*{requestFormat}"
@@ -382,28 +389,28 @@
 
             <!-- Tabs -->
             <ul class="nav nav-tabs mb-3" id="apiResourceTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <a class="nav-link active"
-                   id="spec-tab"
-                   data-bs-toggle="tab"
-                   href="#apiSpec"
-                   role="tab"
-                   onclick="openApiSpecTab()">
-                    API Specification
-                </a>
-            </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active"
+                       id="spec-tab"
+                       data-bs-toggle="tab"
+                       href="#apiSpec"
+                       role="tab"
+                       onclick="openApiSpecTab()">
+                        API Specification
+                    </a>
+                </li>
 
-            <li class="nav-item" role="presentation">
-                <a class="nav-link"
-                   id="auth-tab"
-                   data-bs-toggle="tab"
-                   href="#authMethods"
-                   role="tab"
-                   onclick="openApiSpecTab()">
-                    Authentication Methods
-                </a>
-            </li>
-        </ul>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link"
+                       id="auth-tab"
+                       data-bs-toggle="tab"
+                       href="#authMethods"
+                       role="tab"
+                       onclick="openApiSpecTab()">
+                        Authentication Methods
+                    </a>
+                </li>
+            </ul>
 
             <!-- Tab Content -->
             <div class="tab-content">
@@ -411,7 +418,7 @@
                 <!-- ================= API SPEC TAB ================= -->
                 <div class="tab-pane fade show active" id="apiSpec" role="tabpanel">
 
-                                    <!-- OpenAPI Resource Table -->
+                    <!-- OpenAPI Resource Table -->
                     <div class="card mt-3 shadow-sm mb-4">
                         <div class="card-header d-flex justify-content-between align-items-center">
                         <span>
@@ -721,13 +728,13 @@
         if (!name || !url) { alert("API Name and URL are required"); return; }
 
         apiList.push({ name, url, method, status, requestBody, responseBody, protocol });
-       if (protocol === 'SOAP'){
-           renderWsdlApiTable();
-           generateWsdl();
-       }else {
-           renderApiTable();
-           generateOpenApi();
-       }
+        if (protocol === 'SOAP'){
+            renderWsdlApiTable();
+            generateWsdl();
+        }else {
+            renderApiTable();
+            generateOpenApi();
+        }
 
         // Reset optional: clear form
         // document.getElementById("apiForm").reset();
@@ -1042,7 +1049,7 @@
 
 
                     <!-- REQUEST BODY -->
-                    <xsd:element name="Request${stripNs(req.body.tagName)}">
+                    <xsd:element name="${stripNs(req.body.tagName)}">
                         <xsd:complexType>
                             <xsd:sequence>
                               ${xmlToXsd(req.body)}
@@ -1050,7 +1057,7 @@
                         </xsd:complexType>
                     </xsd:element>
                     <!-- RESPONSE BODY -->
-                    <xsd:element name="Response${stripNs(res.body.tagName)}">
+                    <xsd:element name="${stripNs(res.body.tagName)}">
                         <xsd:complexType>
                             <xsd:sequence>
                               ${xmlToXsd(res.body)}
@@ -1062,19 +1069,19 @@
             <!-- MESSAGES -->
             <wsdl:message name="Request">
                       ${req.headers.map(h =>
-                    `
+            `
                 <wsdl:part name="${stripNs(h.tagName)}" element="tns:${stripNs(h.tagName)}"/>`
-                ).join("")}
+        ).join("")}
 
-                <wsdl:part name="body" element="tns:Request${stripNs(req.body.tagName)}"/>
+                <wsdl:part name="body" element="tns:${stripNs(req.body.tagName)}"/>
             </wsdl:message>
             <wsdl:message name="Response">
                       ${res.headers.map(h =>
-                    `
+            `
                 <wsdl:part name="${stripNs(h.tagName)}" element="tns:${stripNs(h.tagName)}"/>`
-                ).join("")}
+        ).join("")}
 
-                <wsdl:part name="body" element="tns:Response${stripNs(res.body.tagName)}"/>
+                <wsdl:part name="body" element="tns:${stripNs(res.body.tagName)}"/>
             </wsdl:message>
             <!-- PORT TYPE -->
             <wsdl:portType name="${op}PortType">
@@ -1090,17 +1097,17 @@
                     <soap:operation soapAction="${op}"/>
                     <wsdl:input>
                           ${req.headers.map(h =>
-                    `
+            `
                         <soap:header message="tns:${op}Request" part="${stripNs(h.tagName)}" use="literal"/>`
-                ).join("")}
+        ).join("")}
 
                         <soap:body use="literal"/>
                     </wsdl:input>
                     <wsdl:output>
                           ${res.headers.map(h =>
-                    `
+            `
                         <soap:header message="tns:${op}Response" part="${stripNs(h.tagName)}" use="literal"/>`
-                ).join("")}
+        ).join("")}
 
                         <soap:body use="literal"/>
                     </wsdl:output>

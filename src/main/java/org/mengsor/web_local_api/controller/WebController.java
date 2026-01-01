@@ -20,6 +20,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -84,7 +85,9 @@ public class WebController {
     @GetMapping("/create-new-api/redirect")
     public String redirectToApiConfig(@RequestParam Long id, @RequestParam String protocol) {
         // Optionally, you could load the API config here and pass as parameter
-        return "redirect:/page/api-config?id=" + id + "&protocol=" + protocol;
+        String raw = "id=" + id + "&protocol=" + protocol;
+        String value = CryptoUtil.encryptV(raw);
+        return "redirect:/page/api-config?value=" + value;
     }
 
     /**
@@ -99,7 +102,16 @@ public class WebController {
 
     /* UI PAGE */
     @GetMapping("/api-config")
-    public String getPage(@RequestParam(required = false) Long id,@RequestParam(required = false) String protocol, Model model) {
+    public String getPage(@RequestParam(required = false) String value, Model model) {
+
+        Long id = null;
+        String protocol = null;
+        if (value != null) {
+            String raw = CryptoUtil.decryptV(value);
+            String[] params = raw.split("&");
+             id = Long.parseLong(params[0].split("=")[1]);
+             protocol = params[1].split("=")[1];
+        }
         ApiConfig config = apiConfigService.findById(id);
         if (id != null) config.setId(id);
         if (protocol != null) config.setProtocol(protocol);
