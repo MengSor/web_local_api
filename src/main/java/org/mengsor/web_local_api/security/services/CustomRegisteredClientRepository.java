@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.mengsor.web_local_api.model.SettingCache;
 import org.mengsor.web_local_api.model.enums.SecurityMode;
 import org.mengsor.web_local_api.services.SettingCacheService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -22,6 +23,8 @@ import java.time.temporal.ChronoUnit;
 public class CustomRegisteredClientRepository
         implements RegisteredClientRepository {
 
+    @Value("${server.port}")
+    private String server_port;
     private final SettingCacheService settingCacheService;
     private final PasswordEncoder passwordEncoder;
 
@@ -29,6 +32,7 @@ public class CustomRegisteredClientRepository
     private static final AuthorizationGrantType CLIENT_CREDENTIALS = new AuthorizationGrantType("client_credentials");
     private static final AuthorizationGrantType REFRESH_TOKEN = new AuthorizationGrantType("refresh_token");
     private static final AuthorizationGrantType ACCESS_TOKEN = new AuthorizationGrantType("access_token");
+    private static final AuthorizationGrantType AUTHORIZATION_CODE = new AuthorizationGrantType("authorization_code");
 
     @Override
     public void save(RegisteredClient registeredClient) {
