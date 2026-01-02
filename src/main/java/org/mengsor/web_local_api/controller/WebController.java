@@ -48,7 +48,7 @@ public class WebController {
     @GetMapping("/create-new-api")
     public String getPage(Model model) {
         List<CreateNewApi> mockApis = service.loadAll();
-        String baseUrl = "http://localhost:" + serverPort + "/skyvva.api";
+        String baseUrl = "http://localhost:" + serverPort + "/query.api/";
         model.addAttribute("serverPort", baseUrl);
         model.addAttribute("mockApis", mockApis);
         model.addAttribute("activePage", "create-new-api");
@@ -61,7 +61,7 @@ public class WebController {
     @PostMapping("/create-new-api/save")
     public String save(@ModelAttribute CreateNewApi api, Model model) {
         service.save(api);
-        String baseUrl = "http://localhost:" + serverPort + "/skyvva.api";
+        String baseUrl = "http://localhost:" + serverPort + "/query.api/";
         model.addAttribute("serverPort", baseUrl);
         model.addAttribute("mockApis", service.loadAll());
         model.addAttribute("message", "API created successfully!");

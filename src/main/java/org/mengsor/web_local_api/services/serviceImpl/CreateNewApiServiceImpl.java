@@ -48,7 +48,7 @@ public class CreateNewApiServiceImpl implements CreateNewApiService {
         }
 
         api.setId(lastId == 0 ? 1L : lastId + 1);
-        api.setBaseUrl("http://localhost:"+serverPort+ "/skyvva.api/");
+        api.setBaseUrl("http://localhost:"+serverPort+ "/query.api/");
         api.setCreatedDate(new Date());
 
         if (!apis.isEmpty()) {
