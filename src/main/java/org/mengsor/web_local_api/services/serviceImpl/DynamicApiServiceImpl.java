@@ -114,18 +114,6 @@ public class DynamicApiServiceImpl implements DynamicApiService {
             return new ApiResponse(false, msg, null, HttpStatus.BAD_REQUEST.value());
         }
 
-//        // Validate Cookies
-//        Map<String, String> requiredCookies = toMap(cookieList);
-//        List<String> missingCookies = new ArrayList<>();
-//        for (Map.Entry<String, String> entry : requiredCookies.entrySet()) {
-//            String key = entry.getKey();
-//            String expectedValue = entry.getValue();
-//            String actualValue = cookies.get(key);
-//
-//            if (actualValue == null || (expectedValue != null && !expectedValue.equals(actualValue))) {
-//                missingCookies.add(key);
-//            }
-//        }
         // --- Validate cookies ---
         List<ApiConfig.keyValuePair> cookieList = convertToKeyValuePairList(config.getCookies());
         Map<String, String> requiredCookies = toMap(cookieList);
@@ -163,13 +151,17 @@ public class DynamicApiServiceImpl implements DynamicApiService {
         // --- SOAP Validation ---
         if (isSoap) {
             try {
-                SoapValidationResult result = validateSoapRequestWithHeaders(request, requestBody);
-                extractedBody = result.getExtractedBody();
-                soapHeaders = result.getHeaders();
+                if (!config.getRequestBody().isBlank() && config.getRequestBody() != null) {
+                    SoapValidationResult result = validateSoapRequestWithHeaders(request, requestBody);
+                    extractedBody = result.getExtractedBody();
+                    soapHeaders = result.getHeaders();
+                }
             } catch (Exception ex) {
                 String fault = buildSoapFault(ex.getMessage());
+                log.error("SOAP validation failed: {}", ex.getMessage());
+                log.debug("SOAP request body: {}", fault);
                 requestLogService.logUnmatched(request, requestBody, config, "SOAP validation failed",
-                        ex.getMessage(), 500);
+                        fault, 500);
                 return new ApiResponse(false, ex.getMessage(), fault, 500);
             }
         }
@@ -269,8 +261,8 @@ public class DynamicApiServiceImpl implements DynamicApiService {
         if (body == null || body.isBlank()) throw new RuntimeException("SOAP body is empty");
 
         // SOAPAction
-        String soapAction = request.getHeader("SOAPAction");
-        if (soapAction == null || soapAction.isBlank()) throw new RuntimeException("Missing SOAPAction header");
+//        String soapAction = request.getHeader("SOAPAction");
+//        if (soapAction == null || soapAction.isBlank()) throw new RuntimeException("Missing SOAPAction header");
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);

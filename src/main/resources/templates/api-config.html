@@ -425,7 +425,7 @@
                             <i class="bi bi-table"></i> API Resource Table
                         </span>
                             <button class="btn btn-sm btn-success" onclick="downloadOpenApi()">
-                                <i class="bi bi-download"></i> Download Full OpenAPI JSON
+                                <i class="bi bi-download"></i> Download File
                             </button>
                         </div>
 
@@ -1047,23 +1047,20 @@
                         </xsd:complexType>
                     </xsd:element>`).join("")}
 
-
                     <!-- REQUEST BODY -->
-                    <xsd:element name="${stripNs(req.body.tagName)}">
-                        <xsd:complexType>
+                    <xsd:element name="${stripNs(req.body.tagName)}" type="tns:${req.body.tagName}"/>
+                        <xsd:complexType name="${stripNs(req.body.tagName)}">
                             <xsd:sequence>
                               ${xmlToXsd(req.body)}
                             </xsd:sequence>
                         </xsd:complexType>
-                    </xsd:element>
                     <!-- RESPONSE BODY -->
-                    <xsd:element name="${stripNs(res.body.tagName)}">
-                        <xsd:complexType>
+                    <xsd:element name="${stripNs(res.body.tagName)}" type= "tns:${res.body.tagName}"/>
+                        <xsd:complexType name="${stripNs(res.body.tagName)}">
                             <xsd:sequence>
                               ${xmlToXsd(res.body)}
                             </xsd:sequence>
                         </xsd:complexType>
-                    </xsd:element>
                 </xsd:schema>
             </wsdl:types>
             <!-- MESSAGES -->
@@ -1073,7 +1070,7 @@
                 <wsdl:part name="${stripNs(h.tagName)}" element="tns:${stripNs(h.tagName)}"/>`
         ).join("")}
 
-                <wsdl:part name="body" element="tns:${stripNs(req.body.tagName)}"/>
+                <wsdl:part name="parameters" element="tns:${stripNs(req.body.tagName)}"/>
             </wsdl:message>
             <wsdl:message name="Response">
                       ${res.headers.map(h =>
@@ -1081,7 +1078,7 @@
                 <wsdl:part name="${stripNs(h.tagName)}" element="tns:${stripNs(h.tagName)}"/>`
         ).join("")}
 
-                <wsdl:part name="body" element="tns:${stripNs(res.body.tagName)}"/>
+                <wsdl:part name="parameters" element="tns:${stripNs(res.body.tagName)}"/>
             </wsdl:message>
             <!-- PORT TYPE -->
             <wsdl:portType name="${op}PortType">
@@ -1156,8 +1153,6 @@
 
         [...node.children].forEach(child => {
             const name = stripNs(child.tagName);
-            const value = child.textContent?.trim();
-
             if (child.children.length > 0) {
                 content += `
             <xsd:element name="${name}">
@@ -1167,14 +1162,15 @@
                 </xsd:sequence>
               </xsd:complexType>
             </xsd:element>`;
-            } else {
-                content += `
+                        } else {
+                            content += `
             <xsd:element name="${name}" type="xsd:string" minOccurs="0"/>`;
             }
         });
 
         return content;
     }
+
 
 
     // ---------- open and close tabs ----------
