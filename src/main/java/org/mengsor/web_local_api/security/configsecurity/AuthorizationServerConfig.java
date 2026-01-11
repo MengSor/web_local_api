@@ -29,6 +29,21 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 
+/**
+ * @author mengsor
+ * @date 2026/01/11
+ * It leverages Spring Security's libraries and offers custom configurations for handling
+ * security-related concerns such as JWT token generation, OAuth2 token flows, and custom grant types.
+ * The class also integrates application-specific service components such as
+ * CustomUserDetailsService and CustomRegisteredClientRepository.
+ *
+ * Key responsibilities and components:
+ * - {@link AuthenticationManager}: Configures authentication providers and manages authentication processes.
+ * - {@link JWKSource}: Provides a JSON Web Key source used for signing and validating JWT tokens.
+ * - {@link SecurityFilterChain}: Defines the security filter chain for the OAuth2 Authorization Server.
+ * - {@link OAuth2AuthorizationService}: Manages the persistence and retrieval of OAuth2 authorization data.
+ * - {@link OAuth2TokenGenerator}: Generates OAuth2 tokens such as access tokens and refresh tokens.
+ */
 @Configuration
 @RequiredArgsConstructor
 public class AuthorizationServerConfig {

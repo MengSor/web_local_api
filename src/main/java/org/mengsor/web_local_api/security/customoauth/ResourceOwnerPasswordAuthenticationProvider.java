@@ -27,6 +27,13 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Set;
 
+/**
+ * @author mengsor
+ * @date 2026/01/11
+ * This class is specifically designed to support the password grant type and integrates with
+ * the configured {@link AuthenticationManager}, {@link OAuth2AuthorizationService},
+ * {@link OAuth2TokenGenerator}, and {@link RegisteredClientRepository}.
+ */
 @Component
 @RequiredArgsConstructor
 public class ResourceOwnerPasswordAuthenticationProvider implements org.springframework.security.authentication.AuthenticationProvider {

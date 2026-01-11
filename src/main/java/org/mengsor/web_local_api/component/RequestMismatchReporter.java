@@ -506,7 +506,7 @@ public class RequestMismatchReporter {
             expectedDoc.normalizeDocument();
             actualDoc.normalizeDocument();
 
-            return expectedDoc.isEqualNode(actualDoc);
+            return expectedDoc.equals(actualDoc);
 
         } catch (Exception e) {
             return false;

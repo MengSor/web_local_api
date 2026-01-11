@@ -85,21 +85,6 @@ public class DynamicApiServiceImpl implements DynamicApiService {
 
         boolean isSoap = "SOAP".equalsIgnoreCase(config.getProtocol());
 
-//        List<ApiConfig.keyValuePair> queryList = convertToKeyValuePairList(config.getQueries());
-//        List<ApiConfig.keyValuePair> cookieList  = convertToKeyValuePairList(config.getCookies());
-
-//        // --- Validate query parameters ---
-//        List<String> missingQueries = new ArrayList<>();
-//        Map<String, String> requiredQueries = toMap(queryList);
-//        for (Map.Entry<String, String> entry : requiredQueries.entrySet()) {
-//            String key = entry.getKey();
-//            String expected = entry.getValue();
-//            String[] actual = queryParams.get(key);
-//
-//            if (actual == null || !expected.equals(actual[0])) {
-//                missingQueries.add(key);
-//            }
-//        }
         // --- Validate query parameters ---
         List<ApiConfig.keyValuePair> queryList = convertToKeyValuePairList(config.getQueries());
         Map<String, String> requiredQueries = toMap(queryList);
@@ -157,12 +142,15 @@ public class DynamicApiServiceImpl implements DynamicApiService {
                     soapHeaders = result.getHeaders();
                 }
             } catch (Exception ex) {
-                String fault = buildSoapFault(ex.getMessage());
+               int statusCode = ex instanceof RuntimeException ? HttpStatus.INTERNAL_SERVER_ERROR.value() : HttpStatus.BAD_REQUEST.value();
+               String valueString = statusCode == 500 ? "Internal Server Error" : "Bad Request";
+               String message = ex.getMessage();
+                String fault = buildSoapFault(statusCode,valueString,message);
                 log.error("SOAP validation failed: {}", ex.getMessage());
                 log.debug("SOAP request body: {}", fault);
                 requestLogService.logUnmatched(request, requestBody, config, "SOAP validation failed",
-                        fault, 500);
-                return new ApiResponse(false, ex.getMessage(), fault, 500);
+                        fault, statusCode);
+                return new ApiResponse(false, ex.getMessage(), fault, statusCode);
             }
         }
 
@@ -176,6 +164,10 @@ public class DynamicApiServiceImpl implements DynamicApiService {
              || (config.getHeaders()!=null && headerDiffs.size() >0 && !headerDiffs.isEmpty())) {
 
             String diffReport = reporter.buildNonMatchReport(request, config, requestBody, headerDiffs);
+            String fault = null;
+            if (isSoap){
+                fault = buildSoapFault(HttpStatus.NOT_FOUND.value(),"Record not found","The requested record could not be found.");
+            }
 
             requestLogService.logUnmatched(
                     request,
@@ -183,11 +175,11 @@ public class DynamicApiServiceImpl implements DynamicApiService {
                     config,
                     "Request does not match template",
                     diffReport,
-                    HttpStatus.BAD_REQUEST.value()
+                    HttpStatus.NOT_FOUND.value()
             );
             log.error("Request does not match template: {}", requestBody);
-            return new ApiResponse(false, "Request does not match template", diffReport,
-                    HttpStatus.BAD_REQUEST.value());
+            return new ApiResponse(false, "Request does not match template", isSoap ? fault : diffReport,
+                    HttpStatus.NOT_FOUND.value());
         }
 
         // Prepare response
@@ -260,9 +252,6 @@ public class DynamicApiServiceImpl implements DynamicApiService {
     private SoapValidationResult validateSoapRequestWithHeaders(HttpServletRequest request, String body) throws Exception {
         if (body == null || body.isBlank()) throw new RuntimeException("SOAP body is empty");
 
-        // SOAPAction
-//        String soapAction = request.getHeader("SOAPAction");
-//        if (soapAction == null || soapAction.isBlank()) throw new RuntimeException("Missing SOAPAction header");
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
@@ -353,18 +342,39 @@ public class DynamicApiServiceImpl implements DynamicApiService {
     }
 
     // --- SOAP Fault ---
-    private String buildSoapFault(String message) {
+    private String buildSoapFault(int status,String valueString, String message) {
         return """
-        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
-            <soapenv:Body>
-                <soapenv:Fault>
-                    <faultcode>soap:Client</faultcode>
-                    <faultstring>%s</faultstring>
-                </soapenv:Fault>
-            </soapenv:Body>
-        </soapenv:Envelope>
-        """.formatted(message);
+                <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+                  <soapenv:Body>
+                    <soapenv:Fault>
+                      <faultcode>soapenv:Client</faultcode>
+                      <faultstring>%s</faultstring>
+                      <detail>
+                        <error>
+                          <code>%s</code>
+                          <message>%s</message>
+                        </error>
+                      </detail>
+                    </soapenv:Fault>
+                  </soapenv:Body>
+                </soapenv:Envelope>
+                """.formatted(
+                xmlEscape(valueString),
+                xmlEscape(String.valueOf(status)),
+                xmlEscape(message)
+        );
+
     }
+
+    private static String xmlEscape(String value) {
+        return value == null ? "" :
+                value.replace("&", "&amp;")
+                        .replace("<", "&lt;")
+                        .replace(">", "&gt;")
+                        .replace("\"", "&quot;")
+                        .replace("'", "&apos;");
+    }
+
 
     // --- SOAP Validation Result ---
     private record SoapValidationResult(String extractedBody, Map<String, String> headers) {

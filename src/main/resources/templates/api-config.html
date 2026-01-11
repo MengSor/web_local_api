@@ -2,6 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org" data-bs-theme="light">
 <head>
     <title>API Query Account Configuration</title>
+    <link rel="icon" type="image/x-icon" th:href="@{/images/lo2.png}">
 
     <!-- Bootstrap & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -56,7 +57,6 @@
 
         /* CodeMirror editor */
         .CodeMirror {
-            height: 180px;
             border-radius: 8px;
             font-size: 14px;
         }
@@ -355,9 +355,7 @@
 
                     <div id="responseBodySection" style="display:block;">
                         <textarea id="responseBody"
-                                  th:field="*{responseBody}"
-                                  class="form-control"
-                                  rows="6"></textarea>
+                                  th:field="*{responseBody}" rows="20" oninput="autoResize(this)"></textarea>
 
                         <div class="mt-2 d-flex align-items-center gap-2 beautify-box">
                             <select id="responseFormat"
@@ -701,9 +699,13 @@
     }, 3500);
 
     function autoResize(textarea) {
-        textarea.style.height = 'auto'; // reset height
-        textarea.style.height = textarea.scrollHeight + 'px'; // set height to content
+        textarea.style.height = 'auto';
+        const maxHeight = 300; // px
+        textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
+        textarea.style.overflowY =
+            textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
     }
+
 
     // Optional: auto-resize on page load if textarea has pre-filled content
     window.addEventListener('DOMContentLoaded', () => {
@@ -1016,108 +1018,143 @@
         }
 
         const wsdl = `<?xml version="1.0" encoding="UTF-8"?>
-        <wsdl:definitions
-            xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
-            xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
-            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-            xmlns:tns="http://example.com/wsdl"
-                                      targetNamespace="http://example.com/wsdl">
-            <wsdl:types>
-                <xsd:schema targetNamespace="http://example.com/wsdl" elementFormDefault="qualified">
-                    <!-- REQUEST HEADERS -->
-                        ${req.headers.map(h => `
+<wsdl:definitions
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:tns="http://example.com/wsdl"
+    targetNamespace="http://example.com/wsdl">
 
-                    <xsd:element name="${stripNs(h.tagName)}">
-                        <xsd:complexType>
-                            <xsd:sequence>
-                              ${xmlToXsd(h)}
-                            </xsd:sequence>
-                        </xsd:complexType>
-                    </xsd:element>`).join("")}
+    <wsdl:types>
+        <xsd:schema
+            targetNamespace="http://example.com/wsdl"
+            elementFormDefault="qualified">
 
+            <!-- REQUEST HEADERS -->
+            ${req.headers.map(h => `
+            <xsd:element name="${stripNs(h.tagName)}">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        ${xmlToXsd(h)}
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>`).join("")}
 
-                    <!-- RESPONSE HEADERS -->
-                        ${res.headers.map(h => `
+            <!-- RESPONSE HEADERS -->
+            ${res.headers.map(h => `
+            <xsd:element name="${stripNs(h.tagName)}">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        ${xmlToXsd(h)}
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>`).join("")}
 
-                    <xsd:element name="${stripNs(h.tagName)}">
-                        <xsd:complexType>
-                            <xsd:sequence>
-                              ${xmlToXsd(h)}
-                            </xsd:sequence>
-                        </xsd:complexType>
-                    </xsd:element>`).join("")}
+            <!-- REQUEST BODY -->
+            <xsd:element name="${stripNs(req.body.tagName)}"
+                         type="tns:${stripNs(req.body.tagName)}"/>
 
-                    <!-- REQUEST BODY -->
-                    <xsd:element name="${stripNs(req.body.tagName)}" type="tns:${req.body.tagName}"/>
-                        <xsd:complexType name="${stripNs(req.body.tagName)}">
-                            <xsd:sequence>
-                              ${xmlToXsd(req.body)}
-                            </xsd:sequence>
-                        </xsd:complexType>
-                    <!-- RESPONSE BODY -->
-                    <xsd:element name="${stripNs(res.body.tagName)}" type= "tns:${res.body.tagName}"/>
-                        <xsd:complexType name="${stripNs(res.body.tagName)}">
-                            <xsd:sequence>
-                              ${xmlToXsd(res.body)}
-                            </xsd:sequence>
-                        </xsd:complexType>
-                </xsd:schema>
-            </wsdl:types>
-            <!-- MESSAGES -->
-            <wsdl:message name="Request">
-                      ${req.headers.map(h =>
-            `
-                <wsdl:part name="${stripNs(h.tagName)}" element="tns:${stripNs(h.tagName)}"/>`
-        ).join("")}
+            <xsd:complexType name="${stripNs(req.body.tagName)}">
+                <xsd:sequence>
+                    ${xmlToXsd(req.body)}
+                </xsd:sequence>
+            </xsd:complexType>
 
-                <wsdl:part name="parameters" element="tns:${stripNs(req.body.tagName)}"/>
-            </wsdl:message>
-            <wsdl:message name="Response">
-                      ${res.headers.map(h =>
-            `
-                <wsdl:part name="${stripNs(h.tagName)}" element="tns:${stripNs(h.tagName)}"/>`
-        ).join("")}
+            <!-- RESPONSE BODY -->
+            <xsd:element name="${stripNs(res.body.tagName)}"
+                         type="tns:${stripNs(res.body.tagName)}"/>
 
-                <wsdl:part name="parameters" element="tns:${stripNs(res.body.tagName)}"/>
-            </wsdl:message>
-            <!-- PORT TYPE -->
-            <wsdl:portType name="${op}PortType">
-                <wsdl:operation name="${op}">
-                    <wsdl:input message="tns:Request"/>
-                    <wsdl:output message="tns:Response"/>
-                </wsdl:operation>
-            </wsdl:portType>
-            <!-- BINDING -->
-            <wsdl:binding name="${op}Binding" type="tns:${op}PortType">
-                <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
-                <wsdl:operation name="${op}">
-                    <soap:operation soapAction="${op}"/>
-                    <wsdl:input>
-                          ${req.headers.map(h =>
-            `
-                        <soap:header message="tns:${op}Request" part="${stripNs(h.tagName)}" use="literal"/>`
-        ).join("")}
+            <xsd:complexType name="${stripNs(res.body.tagName)}">
+                <xsd:sequence>
+                    ${xmlToXsd(res.body)}
+                </xsd:sequence>
+            </xsd:complexType>
 
-                        <soap:body use="literal"/>
-                    </wsdl:input>
-                    <wsdl:output>
-                          ${res.headers.map(h =>
-            `
-                        <soap:header message="tns:${op}Response" part="${stripNs(h.tagName)}" use="literal"/>`
-        ).join("")}
+            <!-- SOAP FAULT DETAIL -->
+                        <xsd:element name="SystemError" type="tns:SystemError" />
+                            <xsd:complexType name="SystemError">
+                                <xsd:sequence>
+                                    <xsd:element name="context" type="xsd:string"/>
+                                    <xsd:element name="code" type="xsd:string"/>
+                                    <xsd:element name="message" type="xsd:string"/>
+                                </xsd:sequence>
+                            </xsd:complexType>
+        </xsd:schema>
+    </wsdl:types>
 
-                        <soap:body use="literal"/>
-                    </wsdl:output>
-                </wsdl:operation>
-            </wsdl:binding>
-            <!-- SERVICE -->
-            <wsdl:service name="${op}Service">
-                <wsdl:port name="${op}Port" binding="tns:${op}Binding">
-                    <soap:address location="http://localhost:${SERVER_PORT}/soap"/>
-                </wsdl:port>
-            </wsdl:service>
-        </wsdl:definitions>
-            `;
+    <!-- MESSAGES -->
+    <wsdl:message name="Request">
+        ${req.headers.map(h => `
+        <wsdl:part name="${stripNs(h.tagName)}"
+                   element="tns:${stripNs(h.tagName)}"/>`).join("")}
+        <wsdl:part name="parameters"
+                   element="tns:${stripNs(req.body.tagName)}"/>
+    </wsdl:message>
+
+    <wsdl:message name="Response">
+        ${res.headers.map(h => `
+        <wsdl:part name="${stripNs(h.tagName)}"
+                   element="tns:${stripNs(h.tagName)}"/>`).join("")}
+        <wsdl:part name="parameters"
+                   element="tns:${stripNs(res.body.tagName)}"/>
+    </wsdl:message>
+
+    <!-- FAULT MESSAGE -->
+    <wsdl:message name="FaultMessage">
+        <wsdl:part name="detail" element="tns:SystemError"/>
+    </wsdl:message>
+
+    <!-- PORT TYPE -->
+    <wsdl:portType name="${op}PortType">
+        <wsdl:operation name="${op}">
+            <wsdl:input message="tns:Request"/>
+            <wsdl:output message="tns:Response"/>
+            <wsdl:fault name="ClientFault" message="tns:FaultMessage"/>
+        </wsdl:operation>
+    </wsdl:portType>
+
+    <!-- BINDING -->
+    <wsdl:binding name="${op}Binding" type="tns:${op}PortType">
+        <soap:binding style="document"
+                      transport="http://schemas.xmlsoap.org/soap/http"/>
+
+        <wsdl:operation name="${op}">
+            <soap:operation soapAction="${op}"/>
+
+            <wsdl:input>
+                ${req.headers.map(h => `
+                <soap:header message="tns:Request"
+                             part="${stripNs(h.tagName)}"
+                             use="literal"/>`).join("")}
+                <soap:body use="literal"/>
+            </wsdl:input>
+
+            <wsdl:output>
+                ${res.headers.map(h => `
+                <soap:header message="tns:Response"
+                             part="${stripNs(h.tagName)}"
+                             use="literal"/>`).join("")}
+                <soap:body use="literal"/>
+            </wsdl:output>
+
+            <!-- SOAP FAULT -->
+            <wsdl:fault name="ClientFault">
+                <soap:fault name="ClientFault"
+                            use="literal"/>
+            </wsdl:fault>
+
+        </wsdl:operation>
+    </wsdl:binding>
+
+    <!-- SERVICE -->
+    <wsdl:service name="${op}Service">
+        <wsdl:port name="${op}Port" binding="tns:${op}Binding">
+            <soap:address location="http://localhost:${SERVER_PORT}/soap"/>
+        </wsdl:port>
+    </wsdl:service>
+
+</wsdl:definitions>`;
+
 
         document.getElementById("openApiPreview").textContent = wsdl;
         document.getElementById("swaggerPreview").textContent = wsdl;

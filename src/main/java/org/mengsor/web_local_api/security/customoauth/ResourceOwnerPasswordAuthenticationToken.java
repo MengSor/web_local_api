@@ -6,6 +6,18 @@ import org.springframework.security.core.Authentication;
 import java.util.Collections;
 import java.util.Set;
 
+/**
+ * @author mengsor
+ * @date 2026/01/11
+ * Represents an authentication token for the Resource Owner Password Credentials Grant in OAuth 2.0.
+ * This is used to encapsulate the username, password, client principal, and requested scopes
+ * associated with this authentication mechanism.
+ *
+ * This class extends the {@link AbstractAuthenticationToken} and provides specific attributes
+ * required for the resource owner password grant flow, including user credentials and associated client details.
+ *
+ * The authentication token is initially unauthenticated and must be set as authenticated after successful authentication.
+ */
 public class ResourceOwnerPasswordAuthenticationToken extends AbstractAuthenticationToken {
 
     private final String username;

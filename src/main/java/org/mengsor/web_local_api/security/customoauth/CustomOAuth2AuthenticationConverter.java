@@ -16,6 +16,17 @@ import org.springframework.util.StringUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * @author mengsor
+ * @date 2026/01/11
+ * Custom implementation of the {@link AuthenticationConverter} interface to handle specific OAuth 2.0
+ * authentication grant types and convert them into appropriate {@link Authentication} objects.
+ *
+ * <p>This class supports the following grant types:
+ * - Resource Owner Password Credentials Grant ("password")
+ * - Client Credentials Grant ("client_credentials")
+ * - Refresh Token Grant ("refresh_token")
+ */
 public class CustomOAuth2AuthenticationConverter implements AuthenticationConverter {
 
     private static final AuthorizationGrantType PASSWORD = new AuthorizationGrantType("password");
